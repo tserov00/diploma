@@ -21,7 +21,7 @@ public class BalanceHistory {
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
 
-    @Column(name = "amount")
+    @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
     @ManyToOne

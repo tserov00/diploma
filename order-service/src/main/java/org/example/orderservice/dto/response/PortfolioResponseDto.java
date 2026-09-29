@@ -6,6 +6,7 @@ import java.math.BigDecimal;
         private Long securityId;
         private String ticker;
         private Integer totalQuantity;
+        private Integer reservedQuantity;
         private BigDecimal avgBuyPrice;
         private BigDecimal currentPrice;
         private String currencyCode;
@@ -42,6 +43,9 @@ import java.math.BigDecimal;
     public Integer getTotalQuantity() {
         return totalQuantity;
     }
+
+    public Integer getReservedQuantity() { return reservedQuantity; }
+    public void setReservedQuantity(Integer reservedQuantity) { this.reservedQuantity = reservedQuantity; }
 
     public void setTotalQuantity(Integer totalQuantity) {
         this.totalQuantity = totalQuantity;

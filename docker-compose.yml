@@ -31,7 +31,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mypassword
     volumes:
-      - "./db-dumps/broker_market.sql:/docker-entrypoint-initdb.d/broker_market.sql"
       - pg_market_data:/var/lib/postgresql/data
     ports:
       - "15433:5432"
@@ -51,7 +50,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mypassword
     volumes:
-      - "./db-dumps/broker_orders.sql:/docker-entrypoint-initdb.d/broker_orders.sql"
       - pg_orders_data:/var/lib/postgresql/data
     ports:
       - "15434:5432"
@@ -82,40 +80,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-    ports:
-      - "2181:2181"
-    networks:
-      - broker-network
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "7075:7075"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:7075
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:7075
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    networks:
-      - broker-network
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
 
   auth-service:
     build:
@@ -166,7 +130,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_market:5432/broker_market
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: mypassword
-      FINNHUB_API_KEY: ${FINNHUB_API_KEY:?Missing FINNHUB_API_KEY in .env}
+      MARKET_DATA_PROVIDER: ${MARKET_DATA_PROVIDER:-ALOR}
+      ALOR_BASE_URL: ${ALOR_BASE_URL:-https://api.alor.ru}
+      MARKET_DATA_REFRESH_INTERVAL_MS: ${MARKET_DATA_REFRESH_INTERVAL_MS:-60000}
       SERVER_PORT: 7073
     ports:
       - "7073:7073"
@@ -185,15 +151,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_savings:5432/broker_savings
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: mypassword
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_KAFKA_CONSUMER_GROUP_ID: savings-group
       SERVER_PORT: 7072
     ports:
       - "7072:7072"
     depends_on:
       postgres_savings:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
     networks:
       - broker-network
@@ -207,17 +169,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_orders:5432/broker_orders
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: mypassword
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_KAFKA_CONSUMER_GROUP_ID: saga-group
       SERVER_PORT: 7074
       MARKET_SERVICE_URL: http://market-service:7073
       SAVINGS_SERVICE_URL: http://savings-service:7072
+      ORDER_PROCESSING_INTERVAL_MS: ${ORDER_PROCESSING_INTERVAL_MS:-10000}
+      MARKET_QUOTE_MAX_AGE_SECONDS: ${MARKET_QUOTE_MAX_AGE_SECONDS:-2700}
     ports:
       - "7074:7074"
     depends_on:
       postgres_orders:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
     networks:
       - broker-network

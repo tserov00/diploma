@@ -1,235 +1,45 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Мои заявки</title>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Мои заявки · Demo Broker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .navbar {
-            display: flex;
-            justify-content: space-around;
-            background: #fafafa;
-            border-bottom: 1px solid #ddd;
-        }
-        .navbar a {
-            padding: 12px 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
-        .navbar a.active {
-            color: #007bff;
-            border-bottom: 3px solid #007bff;
-        }
-        .navbar a:hover {
-            background: #f0f0f0;
-        }
-        .content {
-            padding: 20px;
-        }
-        h1 {
-            margin: 0 0 20px;
-            font-size: 1.4em;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background: #f0f0f0;
-        }
-        .no-data, .auth-error {
-            text-align: center;
-            color: #777;
-            padding: 30px 0;
-            font-size: 1.1em;
-        }
-        .auth-error a {
-            color: #007bff;
-            text-decoration: underline;
-        }
-        .btn-refresh {
-            margin-bottom: 10px;
-            padding: 6px 12px;
-            background: #17a2b8;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-refresh:hover {
-            background: #138496;
-        }
-        .highlight {
-            color: red;
-            font-weight: bold;
-        }
+        :root { font-family: system-ui, Arial, sans-serif; background: #f3f5f8; color: #172033; } body { margin: 0; }
+        nav { display: flex; gap: 22px; padding: 16px max(20px, calc((100% - 1120px) / 2)); background: #fff; border-bottom: 1px solid #e1e5eb; }
+        nav a { color: #526176; text-decoration: none; } nav a.active { color: #175cd3; font-weight: 700; }
+        main { max-width: 1120px; margin: 32px auto; padding: 0 18px; } .card { background: white; border: 1px solid #e1e5eb; border-radius: 12px; overflow: auto; }
+        table { width: 100%; min-width: 900px; border-collapse: collapse; } th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf0f4; } th { background: #fafbfc; color: #667085; font-size: 13px; }
+        .muted, .empty { color: #667085; } .empty { text-align: center; padding: 32px; } button { border: 0; background: #fff0f0; color: #b42318; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+        @media(max-width:640px) { nav { gap: 12px; overflow: auto; white-space: nowrap; } }
     </style>
 </head>
-<body>
-<div class="container">
-    <nav class="navbar">
-        <a href="/portfolio.html">Портфель</a>
-        <a href="/markets.html">Рынки</a>
-        <a href="/accounts.html">Мои счета</a>
-        <a href="/orders.html" class="active">Мои заявки</a>
-        <a href="/transactions.html">Мои транзакции</a>
-    </nav>
-    <div class="content">
-        <h1>Мои заявки</h1>
-        <button class="btn-refresh" onclick="loadOrders()">Обновить</button>
-        <table id="ordersTable">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Тикер</th>
-                <th>Тип</th>
-                <th>Цена</th>
-                <th>Комиссия</th>
-                <th>Кол-во</th>
-                <th>Доступно</th>
-                <th>Статус</th>
-                <th>Дата</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr><td colspan="9" class="no-data">загрузка...</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
+<body><nav><a href="/portfolio.html">Портфель</a><a href="/markets.html">Рынок</a><a href="/accounts.html">Счета</a><a href="/orders.html" class="active">Заявки</a><a href="/transactions.html">Исполнения</a></nav>
+<main><h1>Мои заявки</h1><p class="muted">Открытая лимитная заявка резервирует деньги или бумаги до исполнения либо отмены.</p>
+<div class="card"><table><thead><tr><th>ID</th><th>Инструмент</th><th>Сторона</th><th>Тип</th><th>Лимит</th><th>Количество</th><th>Исполнено</th><th>Остаток</th><th>Статус</th><th>Создана</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="11" class="empty">Загрузка…</td></tr></tbody></table></div></main>
 <script>
-    const token = localStorage.getItem('jwt_token');
-    console.log("[ORDERS] Токен при загрузке страницы:", 
-        token ? `есть (длина ${token.length})` : "ОТСУТСТВУЕТ");
-
-    // Если токена нет — сразу показываем ошибку авторизации
-    if (!token) {
-        document.querySelector('#ordersTable tbody').innerHTML = `
-            <tr>
-                <td colspan="9" class="auth-error">
-                    Необходимо войти в систему<br>
-                    <a href="/login.html">Перейти на страницу входа</a>
-                </td>
-            </tr>`;
+    const token = localStorage.getItem('jwt_token'); const rows = document.getElementById('rows');
+    const label = value => ({ BUY: 'Покупка', SELL: 'Продажа', MARKET: 'Рыночная', LIMIT: 'Лимитная', OPEN: 'Открыта', PARTIALLY_FILLED: 'Частично исполнена', FILLED: 'Исполнена', CANCELED: 'Отменена', CANCEL_PENDING: 'Отмена…', PROCESSING: 'Исполнение…', REJECTED: 'Отклонена', PENDING: 'Создаётся' }[value] || value || '—');
+    const price = value => value == null ? '—' : Number(value).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    async function cancel(id) {
+        if (!confirm('Отменить заявку #' + id + '?')) return;
+        const response = await fetch('/api/orders/' + encodeURIComponent(id), { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+        if (!response.ok) { alert('Не удалось отменить заявку (' + response.status + ').'); return; }
+        load();
     }
-
-    async function loadOrders() {
-        const tbody = document.querySelector('#ordersTable tbody');
-
-        if (!token) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="auth-error">
-                        Необходимо войти в систему<br>
-                        <a href="/login.html">Перейти на страницу входа</a>
-                    </td>
-                </tr>`;
-            return;
-        }
-
-        tbody.innerHTML = '<tr><td colspan="9" class="no-data">загрузка...</td></tr>';
-
+    async function load() {
+        if (!token) { rows.innerHTML = '<tr><td colspan="11" class="empty">Войдите в приложение, чтобы увидеть заявки.</td></tr>'; return; }
         try {
-            console.log("[ORDERS] Запрос к /api/orders/history с JWT");
-
-            const resp = await fetch('/api/orders/history', {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch('/api/orders/history', { headers: { Authorization: 'Bearer ' + token } });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const list = await response.json(); rows.replaceChildren();
+            if (!list.length) { rows.innerHTML = '<tr><td colspan="11" class="empty">Заявок пока нет.</td></tr>'; return; }
+            list.forEach(order => {
+                const tr = document.createElement('tr'); const cells = [order.id, order.ticker, label(order.side), label(order.orderType), price(order.limitPrice), order.quantity, order.filledQuantity, order.remainingQuantity, label(order.status), order.createdAt ? new Date(order.createdAt).toLocaleString('ru-RU') : '—'];
+                cells.forEach(value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : value; tr.appendChild(td); });
+                const action = document.createElement('td');
+                if (['OPEN', 'PARTIALLY_FILLED'].includes(order.status)) { const button = document.createElement('button'); button.textContent = 'Отменить'; button.onclick = () => cancel(order.id); action.appendChild(button); }
+                tr.appendChild(action); rows.appendChild(tr);
             });
-
-            if (resp.status === 401) {
-                console.warn("[ORDERS] 401 — токен недействителен");
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="9" class="auth-error">
-                            Сессия истекла или токен недействителен (401)<br>
-                            <a href="/login.html">Войти заново</a> | 
-                            <a href="#" onclick="localStorage.removeItem('jwt_token'); location.reload();">Очистить токен</a>
-                        </td>
-                    </tr>`;
-                return;
-            }
-
-            if (!resp.ok) {
-                let errMsg = `HTTP ${resp.status}`;
-                try {
-                    const errJson = await resp.json();
-                    errMsg = `Ошибка ${errJson.status || resp.status}: ${errJson.message || errJson.error || 'Неизвестная ошибка'}`;
-                } catch {
-                    errMsg = await resp.text() || errMsg;
-                }
-                console.error(errMsg);
-                tbody.innerHTML = `<tr><td colspan="9" class="no-data">${errMsg}</td></tr>`;
-                return;
-            }
-
-            const list = await resp.json();
-
-            if (!Array.isArray(list) || list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="no-data">У вас нет заявок</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = '';
-
-            list.forEach(o => {
-                const tr = document.createElement('tr');
-
-                const price = parseFloat(o.price);
-                const market = parseFloat(o.currentPrice);
-                const isHighlighted = !isNaN(price) && !isNaN(market) && 
-                                    (price > market * 1.5 || price < market * 0.5);
-
-                tr.innerHTML = `
-                    <td>${o.id ?? '-'}</td>
-                    <td>${o.ticker ?? '-'}</td>
-                    <td>${o.orderType ?? '-'}</td>
-                    <td ${isHighlighted ? 'class="highlight"' : ''}>${!isNaN(price) ? price.toFixed(2) : '-'}</td>
-                    <td>${o.fee ? parseFloat(o.fee).toFixed(2) : '-'}</td>
-                    <td>${o.quantity ?? '-'}</td>
-                    <td>${o.availableQuantity ?? 0}</td>
-                    <td>${o.orderStatus ?? '-'}</td>
-                    <td>${o.createdAt ? new Date(o.createdAt).toLocaleString('ru-RU') : '-'}</td>
-                `;
-
-                tbody.appendChild(tr);
-            });
-
-        } catch (err) {
-            console.error('[ORDERS] Ошибка загрузки заявок:', err);
-            tbody.innerHTML = '<tr><td colspan="9" class="no-data">Ошибка загрузки заявок</td></tr>';
-        }
+        } catch (error) { rows.innerHTML = '<tr><td colspan="11" class="empty">Не удалось загрузить заявки: ' + error.message + '</td></tr>'; }
     }
-
-    // Запуск при загрузке страницы
-    window.addEventListener('DOMContentLoaded', () => {
-        if (token) {
-            loadOrders();
-        }
-    });
-</script>
-</body>
-</html>
+    load(); setInterval(load, 15000);
+</script></body></html>

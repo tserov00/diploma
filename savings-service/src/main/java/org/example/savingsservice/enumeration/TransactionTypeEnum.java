@@ -4,7 +4,9 @@ public enum TransactionTypeEnum {
     DEPOSIT("DEPOSIT"),
     WITHDRAWAL("WITHDRAWAL"),
     SENT("SENT"),
-    RECEIVED("RECEIVED");
+    RECEIVED("RECEIVED"),
+    BUY("BUY"),
+    SELL("SELL");
 
     String description;
 

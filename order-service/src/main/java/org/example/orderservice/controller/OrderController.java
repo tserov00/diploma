@@ -20,21 +20,20 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @PostMapping("/buy")
-    public ResponseEntity<Void> createBuyOrder(@Valid @RequestBody OrderDto orderDto, @RequestHeader("User-Id") Long userId) {
-        orderService.createBuyOrder(orderDto, userId);
+    @PostMapping
+    public ResponseEntity<Void> createOrder(@Valid @RequestBody OrderDto orderDto, @RequestHeader("User-Id") Long userId) {
+        orderService.createOrder(orderDto, userId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PostMapping("/sell")
-    public ResponseEntity<Void> createSellOrder(@Valid @RequestBody OrderDto orderDto, @RequestHeader("User-Id") Long userId) {
-        orderService.createSellOrder(orderDto, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelOrder(@PathVariable Long id, @RequestHeader("User-Id") Long userId) {
+        orderService.cancelOrder(id, userId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/history")
     public ResponseEntity<List<OrderResponseDto>> getHistory(@RequestHeader("User-Id") Long userId) {
-        List responseBody = orderService.getHistory(userId);
-        return ResponseEntity.status(HttpStatus.OK).body(responseBody);
+        return ResponseEntity.ok(orderService.getHistory(userId));
     }
 }

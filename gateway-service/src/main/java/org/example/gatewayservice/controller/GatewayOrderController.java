@@ -1,5 +1,6 @@
 package org.example.gatewayservice.controller;
 
+import jakarta.validation.Valid;
 import org.example.gatewayservice.dto.request.OrderDto;
 import org.example.gatewayservice.dto.response.OrderResponseDto;
 import org.example.gatewayservice.security.UserPrincipal;
@@ -19,10 +20,10 @@ public class GatewayOrderController {
         this.orderWebClient = orderWebClient;
     }
 
-    @PostMapping("/buy")
-    public ResponseEntity<Void> createBuyOrder(@RequestBody OrderDto order, @AuthenticationPrincipal UserPrincipal user) {
+    @PostMapping
+    public ResponseEntity<Void> createOrder(@Valid @RequestBody OrderDto order, @AuthenticationPrincipal UserPrincipal user) {
         return orderWebClient.post()
-                .uri("/api/orders/buy")
+                .uri("/api/orders")
                 .header("User-Id", String.valueOf(user.getUserId()))
                 .bodyValue(order)
                 .retrieve()
@@ -30,12 +31,11 @@ public class GatewayOrderController {
                 .block();
     }
 
-    @PostMapping("/sell")
-    public ResponseEntity<Void> createSellOrder(@RequestBody OrderDto order, @AuthenticationPrincipal UserPrincipal user) {
-        return orderWebClient.post()
-                .uri("/api/orders/sell")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelOrder(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal user) {
+        return orderWebClient.delete()
+                .uri("/api/orders/{id}", id)
                 .header("User-Id", String.valueOf(user.getUserId()))
-                .bodyValue(order)
                 .retrieve()
                 .toBodilessEntity()
                 .block();

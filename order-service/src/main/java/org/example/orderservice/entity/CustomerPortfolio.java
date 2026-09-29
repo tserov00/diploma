@@ -19,7 +19,7 @@ public class CustomerPortfolio {
     @Column(name = "security_id")
     private Long securityId;
 
-    @Column(name = "avg_buy_price")
+    @Column(name = "avg_buy_price", nullable = false, precision = 20, scale = 8)
     private BigDecimal avgBuyPrice = BigDecimal.ZERO;
 
     @Column(name = "total_quantity", nullable = false)
@@ -28,7 +28,7 @@ public class CustomerPortfolio {
     @Column(name = "reserved_quantity", nullable = false)
     private Integer reservedQuantity = 0;
 
-    @Column(name = "avg_sell_price")
+    @Column(name = "avg_sell_price", nullable = false, precision = 20, scale = 8)
     private BigDecimal avgSellPrice = BigDecimal.ZERO;
 
     @Column(name = "sold_quantity", nullable = false)

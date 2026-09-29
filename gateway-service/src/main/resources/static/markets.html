@@ -1,366 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Рынки</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Рынок · Demo Broker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .navbar {
-            display: flex;
-            justify-content: space-around;
-            background: #fafafa;
-            border-bottom: 1px solid #ddd;
-        }
-        .navbar a {
-            padding: 12px 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
-        .navbar a.active {
-            color: #007bff;
-            border-bottom: 3px solid #007bff;
-        }
-        .navbar a:hover {
-            background: #f0f0f0;
-        }
-        .content {
-            padding: 20px;
-        }
-        h1 {
-            margin: 0 0 20px;
-            font-size: 1.4em;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background: #f0f0f0;
-        }
-        .no-data, .auth-error {
-            text-align: center;
-            color: #777;
-            padding: 30px 0;
-            font-size: 1.1em;
-        }
-        .auth-error a {
-            color: #007bff;
-            text-decoration: underline;
-        }
-        .btn-buy {
-            padding: 6px 12px;
-            background: #28a745;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-buy:hover {
-            background: #218838;
-        }
-        /* Модальное окно */
-        .modal-backdrop {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            width: 300px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        .modal h2 {
-            margin-top: 0;
-        }
-        .modal .form-group {
-            margin: 10px 0;
-        }
-        .modal label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-        .modal input {
-            width: 100%;
-            padding: 6px;
-            box-sizing: border-box;
-        }
-        .modal .fee {
-            margin-top: 8px;
-            font-weight: 500;
-        }
-        .modal .actions {
-            text-align: right;
-            margin-top: 15px;
-        }
-        .modal .actions button {
-            margin-left: 8px;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .modal .actions .confirm {
-            background: #007bff;
-            color: #fff;
-        }
-        .modal .actions .cancel {
-            background: #6c757d;
-            color: #fff;
-        }
+        :root { color-scheme: light; font-family: system-ui, Arial, sans-serif; background: #f3f5f8; color: #172033; }
+        body { margin: 0; }
+        nav { display: flex; gap: 22px; padding: 16px max(20px, calc((100% - 1120px) / 2)); background: #fff; border-bottom: 1px solid #e1e5eb; }
+        nav a { color: #526176; text-decoration: none; }
+        nav a.active { color: #175cd3; font-weight: 700; }
+        main { max-width: 1120px; margin: 32px auto; padding: 0 18px; }
+        h1 { margin-bottom: 8px; }
+        .hint { color: #667085; margin: 0 0 20px; }
+        .card { background: white; border: 1px solid #e1e5eb; border-radius: 12px; overflow: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        th, td { padding: 13px 15px; text-align: left; border-bottom: 1px solid #edf0f4; white-space: nowrap; }
+        th { color: #667085; font-size: 13px; background: #fafbfc; }
+        .ticker { font-weight: 700; color: #172033; }
+        .muted { color: #667085; font-size: 13px; }
+        .link { color: #175cd3; text-decoration: none; font-weight: 600; }
+        .empty { padding: 34px; text-align: center; color: #667085; }
+        @media (max-width: 640px) { nav { gap: 12px; overflow: auto; white-space: nowrap; } main { margin-top: 22px; } }
     </style>
 </head>
 <body>
-<div class="container">
-    <nav class="navbar">
-        <a href="/portfolio.html">Портфель</a>
-        <a href="/markets.html" class="active">Рынки</a>
-        <a href="/accounts.html">Мои счета</a>
-        <a href="/orders.html">Мои заявки</a>
-        <a href="/transactions.html">Мои транзакции</a>
-    </nav>
-    <div class="content">
-        <h1>Рынок ценных бумаг</h1>
-        <table id="marketsTable">
-            <thead>
-            <tr>
-                <th>Тикер</th>
-                <th>Компания</th>
-                <th>ISIN</th>
-                <th>Валюта</th>
-                <th>Цена</th>
-                <th>Действие</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr><td colspan="6" class="no-data">загрузка...</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div id="modal" class="modal-backdrop">
-    <div class="modal">
-        <h2>Купить <span id="modalTicker"></span></h2>
-        <div class="form-group">
-            <label for="priceInput">Цена за единицу</label>
-            <input type="number" id="priceInput" min="0" step="0.01">
-        </div>
-        <div class="form-group">
-            <label for="qtyInput">Количество</label>
-            <input type="number" id="qtyInput" min="1" step="1">
-        </div>
-        <div class="fee">Комиссия: <span id="feeValue">0.00</span></div>
-        <div class="actions">
-            <button class="cancel" onclick="closeModal()">Отмена</button>
-            <button class="confirm" onclick="confirmBuy()">Подтвердить</button>
-        </div>
-    </div>
-</div>
-
+<nav>
+    <a href="/portfolio.html">Портфель</a><a href="/markets.html" class="active">Рынок</a>
+    <a href="/accounts.html">Счета</a><a href="/orders.html">Заявки</a><a href="/transactions.html">Исполнения</a>
+</nav>
+<main>
+    <h1>Акции Московской биржи</h1>
+    <p class="hint">Котировки верхнего уровня bid/ask. ALOR в анонимном режиме возвращает задержанные данные; время ниже — время снимка у источника.</p>
+    <div class="card"><table>
+        <thead><tr><th>Инструмент</th><th>Последняя цена</th><th>Bid</th><th>Ask</th><th>Данные</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="empty">Загрузка инструментов…</td></tr></tbody>
+    </table></div>
+</main>
 <script>
     const token = localStorage.getItem('jwt_token');
-    console.log("[MARKETS] Токен при загрузке страницы:", 
-        token ? `есть (длина ${token.length})` : "ОТСУТСТВУЕТ");
-
-    let currentSecurityId = null;
-
-    // Если токена нет — сразу показываем ошибку
-    if (!token) {
-        document.querySelector('#marketsTable tbody').innerHTML = `
-            <tr>
-                <td colspan="6" class="auth-error">
-                    Необходимо войти в систему<br>
-                    <a href="/login.html">Перейти на страницу входа</a>
-                </td>
-            </tr>`;
-    }
-
-    async function loadMarkets() {
-        if (!token) return;
-
-        const tbody = document.querySelector('#marketsTable tbody');
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data">загрузка...</td></tr>';
-
+    const rows = document.getElementById('rows');
+    const money = value => value == null ? '—' : Number(value).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    const showTime = value => value ? new Date(value).toLocaleString('ru-RU') : 'Котировка загружается';
+    async function load() {
+        if (!token) { rows.innerHTML = '<tr><td colspan="6" class="empty">Войдите в приложение, чтобы открыть рынок.</td></tr>'; return; }
         try {
-            console.log("[MARKETS] Запрос к /api/market/securities с JWT");
-
-            const resp = await fetch('/api/market/securities', {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (resp.status === 401) {
-                console.warn("[MARKETS] 401 — токен недействителен");
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="auth-error">
-                            Сессия истекла или токен недействителен (401)<br>
-                            <a href="/login.html">Войти заново</a> | 
-                            <a href="#" onclick="localStorage.removeItem('jwt_token'); location.reload();">Очистить токен</a>
-                        </td>
-                    </tr>`;
-                return;
-            }
-
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-            const list = await resp.json();
-            tbody.innerHTML = '';
-
-            if (!Array.isArray(list) || list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="no-data">Нет данных</td></tr>';
-                return;
-            }
-
-            for (const sec of list) {
+            const response = await fetch('/api/market/securities', { headers: { Authorization: 'Bearer ' + token } });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const securities = await response.json();
+            rows.replaceChildren();
+            if (!securities.length) { rows.innerHTML = '<tr><td colspan="6" class="empty">Инструменты не найдены.</td></tr>'; return; }
+            securities.forEach(item => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${sec.ticker}</td>
-                    <td>${sec.companyName}</td>
-                    <td>${sec.isin}</td>
-                    <td>${sec.currencyCode}</td>
-                    <td>${Number(sec.lastPrice).toFixed(2)}</td>
-                    <td>
-                        <button class="btn-buy"
-                            data-id="${sec.id}"
-                            data-ticker="${sec.ticker}"
-                            data-price="${sec.lastPrice}">
-                            Купить
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            }
-
-            // Назначаем обработчики на кнопки "Купить"
-            document.querySelectorAll('.btn-buy').forEach(btn => {
-                btn.addEventListener('click', () => openModal(
-                    btn.dataset.id,
-                    btn.dataset.ticker,
-                    parseFloat(btn.dataset.price)
-                ));
+                const values = [item.ticker + ' · ' + item.companyName, money(item.lastPrice), money(item.bidPrice), money(item.askPrice),
+                    (item.quoteSource === 'ALOR' ? 'ALOR · задержка' : item.quoteSource === 'DEMO' ? 'DEMO · симуляция' : 'Нет снимка') + ' · ' + showTime(item.quoteUpdatedAt)];
+                values.forEach((value, index) => {
+                    const td = document.createElement('td');
+                    if (index === 0) { td.className = 'ticker'; td.textContent = value; }
+                    else { if (index === 4) td.className = 'muted'; td.textContent = value; }
+                    tr.appendChild(td);
+                });
+                const action = document.createElement('td');
+                const link = document.createElement('a'); link.className = 'link'; link.href = '/security.html?id=' + encodeURIComponent(item.id); link.textContent = 'Открыть';
+                action.appendChild(link); tr.appendChild(action); rows.appendChild(tr);
             });
-
-        } catch (err) {
-            console.error('[MARKETS] Ошибка загрузки рынка:', err);
-            tbody.innerHTML = '<tr><td colspan="6" class="no-data">Ошибка загрузки рынка</td></tr>';
-        }
+        } catch (error) { rows.innerHTML = '<tr><td colspan="6" class="empty">Не удалось загрузить рынок. Проверьте, запущены ли сервисы.</td></tr>'; }
     }
-
-    function openModal(id, ticker, defaultPrice) {
-        if (!token) {
-            alert('Необходимо войти в систему');
-            return;
-        }
-        currentSecurityId = id;
-        document.getElementById('modalTicker').textContent = ticker;
-        document.getElementById('priceInput').value = defaultPrice.toFixed(2);
-        document.getElementById('qtyInput').value = 1;
-        updateFee();
-        document.getElementById('modal').style.display = 'flex';
-        document.getElementById('priceInput').oninput = updateFee;
-        document.getElementById('qtyInput').oninput = updateFee;
-    }
-
-    function updateFee() {
-        const price = parseFloat(document.getElementById('priceInput').value) || 0;
-        const qty = parseInt(document.getElementById('qtyInput').value, 10) || 0;
-        const fee = price * qty * 0.003;
-        document.getElementById('feeValue').textContent = fee.toFixed(2);
-    }
-
-    function closeModal() {
-        document.getElementById('modal').style.display = 'none';
-    }
-
-    async function confirmBuy() {
-        if (!token) {
-            alert('Сессия истекла. Войдите заново.');
-            return;
-        }
-
-        const price = parseFloat(document.getElementById('priceInput').value);
-        const qty = parseInt(document.getElementById('qtyInput').value, 10);
-        const secId = parseInt(currentSecurityId, 10);
-
-        if (isNaN(secId) || isNaN(price) || isNaN(qty) || qty < 1) {
-            return alert('Некорректные данные для ордера');
-        }
-
-        try {
-            console.log(`[MARKETS] Отправка ордера на покупку securityId=${secId}`);
-
-            const resp = await fetch('/api/orders/buy', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ 
-                    securityId: secId, 
-                    price, 
-                    quantity: qty 
-                })
-            });
-
-            if (resp.status === 401) {
-                alert('Сессия истекла или токен недействителен. Войдите заново.');
-                return;
-            }
-
-            if (resp.ok) {
-                alert('Заявка успешно создана!');
-                closeModal();
-                // Можно обновить портфель или рынок при необходимости
-            } else {
-                try {
-                    const err = await resp.json();
-                    alert(`Ошибка ${err.status || resp.status}: ${err.message || err.error || 'Неизвестная ошибка'}`);
-                } catch {
-                    alert('Ошибка ' + resp.status + ': ' + (await resp.text() || 'Нет описания'));
-                }
-            }
-        } catch (err) {
-            alert('Сетевая ошибка: ' + err.message);
-            console.error(err);
-        }
-    }
-
-    // Запуск при загрузке страницы
-    window.addEventListener('DOMContentLoaded', () => {
-        if (token) {
-            loadMarkets();
-        }
-    });
+    load();
+    setInterval(load, 60000);
 </script>
 </body>
 </html>

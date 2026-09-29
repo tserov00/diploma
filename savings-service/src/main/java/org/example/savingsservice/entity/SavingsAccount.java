@@ -25,10 +25,10 @@ public class SavingsAccount {
     @Column(name = "currency_id")
     private Long currencyId;
 
-    @Column(name = "balance")
+    @Column(name = "balance", nullable = false, precision = 15, scale = 2)
     private BigDecimal balance;
 
-    @Column(name = "reserved_amount")
+    @Column(name = "reserved_amount", nullable = false, precision = 19, scale = 5)
     private BigDecimal reservedAmount;
 
     public SavingsAccount() {}

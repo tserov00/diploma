@@ -2,8 +2,9 @@ package org.example.orderservice.client;
 
 import org.example.orderservice.dto.request.SavingsAccountDto;
 import org.example.orderservice.dto.request.ReserveAmountRequestDto;
+import org.example.orderservice.dto.request.ExecutionSettlementRequestDto;
+import org.example.orderservice.dto.request.ExecutionCreditRequestDto;
 import org.example.orderservice.dto.response.SavingsAccountTransactionDto;
-import org.example.orderservice.dto.response.TransferResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -72,9 +73,19 @@ public class SavingsAccountClient {
                 .block();
     }
 
-    public ResponseEntity<Void> transfer(TransferResponseDto dto, UUID requestId) {
+    public ResponseEntity<Void> settleReservedExecution(ExecutionSettlementRequestDto dto, UUID requestId) {
         return savingsWebClient.post()
-                .uri("/api/accounts/transfer")
+                .uri("/api/accounts/settle-execution")
+                .bodyValue(dto)
+                .header("X-Request-Id", String.valueOf(requestId))
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
+
+    public ResponseEntity<Void> creditExecution(ExecutionCreditRequestDto dto, UUID requestId) {
+        return savingsWebClient.post()
+                .uri("/api/accounts/credit-execution")
                 .bodyValue(dto)
                 .header("X-Request-Id", String.valueOf(requestId))
                 .retrieve()

@@ -1,112 +1,41 @@
 package org.example.gatewayservice.dto.response;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class OrderResponseDto {
     private Long id;
     private String ticker;
+    private String side;
     private String orderType;
-    private BigDecimal price;
-    private BigDecimal currentPrice;
-    private BigDecimal fee;
+    private BigDecimal limitPrice;
+    private BigDecimal marketPrice;
     private Integer quantity;
-    private Integer availableQuantity;
-    private String orderStatus;
-    private LocalDateTime createdAt;
-
+    private Integer filledQuantity;
+    private Integer remainingQuantity;
+    private String status;
+    private Instant createdAt;
     public OrderResponseDto() {}
-
-    public OrderResponseDto(Long id, String ticker, String orderType, BigDecimal price, BigDecimal currentPrice, BigDecimal fee, Integer quantity, Integer availableQuantity, String orderStatus, LocalDateTime createdAt) {
-        this.id = id;
-        this.ticker = ticker;
-        this.orderType = orderType;
-        this.price = price;
-        this.currentPrice = currentPrice;
-        this.fee = fee;
-        this.quantity = quantity;
-        this.availableQuantity = availableQuantity;
-        this.orderStatus = orderStatus;
-        this.createdAt = createdAt;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTicker() {
-        return ticker;
-    }
-
-    public void setTicker(String ticker) {
-        this.ticker = ticker;
-    }
-
-    public String getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(String orderType) {
-        this.orderType = orderType;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public BigDecimal getCurrentPrice() {
-        return currentPrice;
-    }
-
-    public void setCurrentPrice(BigDecimal currentPrice) {
-        this.currentPrice = currentPrice;
-    }
-
-    public BigDecimal getFee() {
-        return fee;
-    }
-
-    public void setFee(BigDecimal fee) {
-        this.fee = fee;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public Integer getAvailableQuantity() {
-        return availableQuantity;
-    }
-
-    public void setAvailableQuantity(Integer availableQuantity) {
-        this.availableQuantity = availableQuantity;
-    }
-
-    public String getOrderStatus() {
-        return orderStatus;
-    }
-
-    public void setOrderStatus(String orderStatus) {
-        this.orderStatus = orderStatus;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getTicker() { return ticker; }
+    public void setTicker(String ticker) { this.ticker = ticker; }
+    public String getSide() { return side; }
+    public void setSide(String side) { this.side = side; }
+    public String getOrderType() { return orderType; }
+    public void setOrderType(String orderType) { this.orderType = orderType; }
+    public BigDecimal getLimitPrice() { return limitPrice; }
+    public void setLimitPrice(BigDecimal limitPrice) { this.limitPrice = limitPrice; }
+    public BigDecimal getMarketPrice() { return marketPrice; }
+    public void setMarketPrice(BigDecimal marketPrice) { this.marketPrice = marketPrice; }
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public Integer getFilledQuantity() { return filledQuantity; }
+    public void setFilledQuantity(Integer filledQuantity) { this.filledQuantity = filledQuantity; }
+    public Integer getRemainingQuantity() { return remainingQuantity; }
+    public void setRemainingQuantity(Integer remainingQuantity) { this.remainingQuantity = remainingQuantity; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

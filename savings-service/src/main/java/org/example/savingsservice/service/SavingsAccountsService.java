@@ -3,6 +3,7 @@ package org.example.savingsservice.service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import org.example.savingsservice.dto.request.ExecutionSettlementRequestDto;
 import org.example.savingsservice.dto.request.SavingsAccountTransactionDto;
 import org.example.savingsservice.dto.response.SavingsAccountEntityResponseDto;
 import org.example.savingsservice.dto.response.SavingsAccountHistoryResponseDto;
@@ -10,7 +11,6 @@ import org.example.savingsservice.dto.response.SavingsAccountResponseDto;
 import org.example.savingsservice.entity.BalanceHistory;
 import org.example.savingsservice.entity.Currency;
 import org.example.savingsservice.entity.SavingsAccount;
-import org.example.savingsservice.entity.TransactionType;
 import org.example.savingsservice.enumeration.CurrencyCodeEnum;
 import org.example.savingsservice.enumeration.TransactionTypeEnum;
 import org.example.savingsservice.exception.custom.InsufficientBalanceException;
@@ -25,17 +25,13 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
 @Service
 public class SavingsAccountsService {
-
     @PersistenceContext
     private final EntityManager entityManager;
-
     private final SavingsAccountRepository savingsAccountRepository;
     private final CurrencyRepository currencyRepository;
     private final BalanceHistoryRepository balanceHistoryRepository;
@@ -44,7 +40,14 @@ public class SavingsAccountsService {
     private final BalanceHistoryMapper balanceHistoryMapper;
     private final IdempotencyService idempotencyService;
 
-    public SavingsAccountsService(SavingsAccountRepository savingsAccountRepository, CurrencyRepository currencyRepository, BalanceHistoryRepository balanceHistoryRepository, TransactionTypeRepository transactionTypeRepository, SavingsAccountMapper savingsAccountMapper, BalanceHistoryMapper balanceHistoryMapper, IdempotencyService idempotencyService, EntityManager entityManager) {
+    public SavingsAccountsService(SavingsAccountRepository savingsAccountRepository,
+                                  CurrencyRepository currencyRepository,
+                                  BalanceHistoryRepository balanceHistoryRepository,
+                                  TransactionTypeRepository transactionTypeRepository,
+                                  SavingsAccountMapper savingsAccountMapper,
+                                  BalanceHistoryMapper balanceHistoryMapper,
+                                  IdempotencyService idempotencyService,
+                                  EntityManager entityManager) {
         this.savingsAccountRepository = savingsAccountRepository;
         this.currencyRepository = currencyRepository;
         this.balanceHistoryRepository = balanceHistoryRepository;
@@ -57,37 +60,22 @@ public class SavingsAccountsService {
 
     @Transactional
     public List<SavingsAccountResponseDto> getSavingsAccounts(Long userId) {
-        List<SavingsAccount> savingsAccounts = savingsAccountRepository.findAllByAccountId(userId);
-        List<SavingsAccountResponseDto> savingsAccountResponseDto = new ArrayList<>();
-        for (SavingsAccount savingsAccount : savingsAccounts) {
-            savingsAccountResponseDto.add(savingsAccountMapper.toResponseDto(savingsAccount));
-        }
-        return savingsAccountResponseDto;
+        ensureRubleAccount(userId);
+        return savingsAccountRepository.findAllByAccountId(userId).stream()
+                .map(savingsAccountMapper::toResponseDto).toList();
     }
 
     @Transactional
     public List<SavingsAccountHistoryResponseDto> getHistory(Long userId) {
-        List<SavingsAccount> savingsAccounts = savingsAccountRepository.findAllByAccountId(userId);
-        List<BalanceHistory> balanceHistory = balanceHistoryRepository.findAllBySavingsAccountIn(savingsAccounts);
-        List<SavingsAccountHistoryResponseDto> savingsAccountHistoryResponseDto = new ArrayList<>();
-        for (BalanceHistory history : balanceHistory) {
-            savingsAccountHistoryResponseDto.add(balanceHistoryMapper.toResponseDto(history));
-        }
-        return savingsAccountHistoryResponseDto;
+        ensureRubleAccount(userId);
+        List<SavingsAccount> accounts = savingsAccountRepository.findAllByAccountId(userId);
+        return balanceHistoryRepository.findAllBySavingsAccountIn(accounts).stream()
+                .map(balanceHistoryMapper::toResponseDto).toList();
     }
 
     @Transactional
     public void deposit(Long userId, SavingsAccountTransactionDto transactionDto) {
-        CurrencyCodeEnum currencyEnum;
-
-        try {
-             currencyEnum = CurrencyCodeEnum.valueOf(transactionDto.getCurrencyCode().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Неверный код валюты");
-        }
-
-        Currency currency = currencyRepository.findByCode(currencyEnum).orElseThrow(() -> new RuntimeException("Валюта не найдена в базе данных"));
-
+        Currency currency = findCurrency(transactionDto.getCurrencyCode());
         entityManager.createNativeQuery("CALL deposit_balance(:p_amount, :p_currency_id, :p_customer_account_id)")
                 .setParameter("p_amount", transactionDto.getAmount())
                 .setParameter("p_currency_id", currency.getId().intValue())
@@ -97,25 +85,13 @@ public class SavingsAccountsService {
 
     @Transactional
     public void withdraw(Long userId, SavingsAccountTransactionDto transactionDto) {
-        CurrencyCodeEnum currencyEnum;
-
-        try {
-            currencyEnum = CurrencyCodeEnum.valueOf(transactionDto.getCurrencyCode().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Неверный код валюты");
-        }
-
-        Currency currency = currencyRepository.findByCode(currencyEnum).orElseThrow(() -> new RuntimeException("Валюта не найдена в базе данных"));
-
-        SavingsAccount savingsAccount = savingsAccountRepository.findByCurrencyIdAndAccountId(currency.getId(), userId)
+        Currency currency = findCurrency(transactionDto.getCurrencyCode());
+        SavingsAccount account = savingsAccountRepository.lockByCurrencyAndAccount(currency.getId(), userId)
                 .orElseThrow(() -> new MissingCurrencyException("У вас нет счета с нужной валютой"));
-
-        BigDecimal availableAmount = savingsAccount.getBalance().subtract(savingsAccount.getReservedAmount());
-
-        if (availableAmount.compareTo(transactionDto.getAmount()) < 0) {
+        BigDecimal freeAmount = account.getBalance().subtract(account.getReservedAmount());
+        if (freeAmount.compareTo(transactionDto.getAmount()) < 0) {
             throw new InsufficientBalanceException("Недостаточно средств");
         }
-
         entityManager.createNativeQuery("CALL withdraw_balance(:p_amount, :p_currency_id, :p_customer_account_id)")
                 .setParameter("p_amount", transactionDto.getAmount())
                 .setParameter("p_currency_id", currency.getId().intValue())
@@ -124,65 +100,97 @@ public class SavingsAccountsService {
     }
 
     @Transactional
-    public void transferAmount(Long senderId, Long receiverId, Long currencyId, BigDecimal transferAmount, BigDecimal fee, UUID requestId) {
-        idempotencyService.checkAndMark(requestId);
-
-        SavingsAccount senderSavingsAccount = savingsAccountRepository.findByCurrencyIdAndAccountId
-                (currencyId, senderId).orElseThrow(RuntimeException::new);
-        SavingsAccount receiverSavingsAccount = savingsAccountRepository.findByCurrencyIdAndAccountId(
-                currencyId, receiverId).orElseThrow(RuntimeException::new);
-
-        BigDecimal availableAmount = senderSavingsAccount.getBalance().subtract(senderSavingsAccount.getReservedAmount());
-
-        if (availableAmount.compareTo(transferAmount.add(fee)) < 0) {
-            throw new InsufficientBalanceException("Недостаточно средств");
-        }
-
-        senderSavingsAccount.setBalance(senderSavingsAccount.getBalance().subtract(transferAmount).subtract(fee));
-        BalanceHistory senderBalanceHistory = new BalanceHistory(senderSavingsAccount, LocalDateTime.now(), transferAmount.add(fee),
-                transactionTypeRepository.findByTransactionType(TransactionTypeEnum.SENT).orElseThrow(RuntimeException::new));
-        savingsAccountRepository.save(senderSavingsAccount);
-        balanceHistoryRepository.save(senderBalanceHistory);
-
-        receiverSavingsAccount.setBalance(receiverSavingsAccount.getBalance().add(transferAmount.subtract(fee)));
-        BalanceHistory receiverBalanceHistory = new BalanceHistory(receiverSavingsAccount, LocalDateTime.now(), transferAmount.subtract(fee),
-                transactionTypeRepository.findByTransactionType(TransactionTypeEnum.RECEIVED).orElseThrow(RuntimeException::new));
-        savingsAccountRepository.save(receiverSavingsAccount);
-        balanceHistoryRepository.save(receiverBalanceHistory);
-    }
-
-    @Transactional
     public void reserveAmount(Long userId, Long currencyId, BigDecimal amount, UUID requestId) {
-        idempotencyService.checkAndMark(requestId);
-
-        SavingsAccount account = savingsAccountRepository.findByCurrencyIdAndAccountId(
-                currencyId, userId).orElseThrow(RuntimeException::new);
-        BigDecimal reservedAmount = account.getReservedAmount().add(amount);
-        if (reservedAmount.compareTo(account.getBalance()) > 0) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Сумма резерва должна быть больше нуля");
+        }
+        if (!idempotencyService.checkAndMark(requestId)) return;
+        SavingsAccount account = savingsAccountRepository.lockByCurrencyAndAccount(currencyId, userId)
+                .orElseThrow(() -> new MissingCurrencyException("У вас нет счета с нужной валютой"));
+        BigDecimal newReservedAmount = account.getReservedAmount().add(amount);
+        if (newReservedAmount.compareTo(account.getBalance()) > 0) {
             throw new InsufficientBalanceException("Недостаточно средств");
         }
-        account.setReservedAmount(reservedAmount);
+        account.setReservedAmount(newReservedAmount);
         savingsAccountRepository.save(account);
     }
 
     @Transactional
     public void releaseAmount(Long userId, Long currencyId, BigDecimal amount, UUID requestId) {
-        idempotencyService.checkAndMark(requestId);
-
-        SavingsAccount account = savingsAccountRepository.findByCurrencyIdAndAccountId(
-                currencyId, userId).orElseThrow(RuntimeException::new);
-        BigDecimal reservedAmount = account.getReservedAmount().subtract(amount);
-        if (account.getReservedAmount().compareTo(amount) < 0) {
-            System.out.println(account.getReservedAmount());
-            System.out.println(amount);
-            throw new InsufficientBalanceException("Недостаточно средств");}
-        account.setReservedAmount(reservedAmount);
+        if (!idempotencyService.checkAndMark(requestId)) return;
+        SavingsAccount account = savingsAccountRepository.lockByCurrencyAndAccount(currencyId, userId)
+                .orElseThrow(() -> new MissingCurrencyException("У вас нет счета с нужной валютой"));
+        if (amount == null || amount.signum() < 0 || account.getReservedAmount().compareTo(amount) < 0) {
+            throw new InsufficientBalanceException("Недостаточно зарезервированных средств");
+        }
+        account.setReservedAmount(account.getReservedAmount().subtract(amount));
         savingsAccountRepository.save(account);
     }
 
     @Transactional
+    public void settleReservedExecution(ExecutionSettlementRequestDto dto, UUID requestId) {
+        if (!idempotencyService.checkAndMark(requestId)) return;
+        validatePositive(dto.getReservedAmount(), "Сумма снятия резерва");
+        if (dto.getDebitAmount() == null || dto.getDebitAmount().signum() < 0
+                || dto.getDebitAmount().compareTo(dto.getReservedAmount()) > 0) {
+            throw new IllegalArgumentException("Сумма списания превышает резерв");
+        }
+        SavingsAccount account = savingsAccountRepository.lockByCurrencyAndAccount(dto.getCurrencyId(), dto.getUserId())
+                .orElseThrow(() -> new MissingCurrencyException("У вас нет счета с нужной валютой"));
+        if (account.getReservedAmount().compareTo(dto.getReservedAmount()) < 0
+                || account.getBalance().compareTo(dto.getDebitAmount()) < 0) {
+            throw new InsufficientBalanceException("Недостаточно зарезервированных средств для исполнения");
+        }
+        account.setReservedAmount(account.getReservedAmount().subtract(dto.getReservedAmount()));
+        account.setBalance(account.getBalance().subtract(dto.getDebitAmount()));
+        savingsAccountRepository.save(account);
+        if (dto.getDebitAmount().signum() > 0) {
+            balanceHistoryRepository.save(new BalanceHistory(account, LocalDateTime.now(), dto.getDebitAmount(),
+                    transactionTypeRepository.findByTransactionType(TransactionTypeEnum.BUY).orElseThrow()));
+        }
+    }
+
+    @Transactional
+    public void creditExecution(Long userId, Long currencyId, BigDecimal amount, UUID requestId) {
+        if (!idempotencyService.checkAndMark(requestId)) return;
+        validatePositive(amount, "Сумма продажи");
+        SavingsAccount account = savingsAccountRepository.lockByCurrencyAndAccount(currencyId, userId)
+                .orElseThrow(() -> new MissingCurrencyException("У вас нет счета с нужной валютой"));
+        account.setBalance(account.getBalance().add(amount));
+        savingsAccountRepository.save(account);
+        balanceHistoryRepository.save(new BalanceHistory(account, LocalDateTime.now(), amount,
+                transactionTypeRepository.findByTransactionType(TransactionTypeEnum.SELL).orElseThrow()));
+    }
+
+    @Transactional
     public SavingsAccountEntityResponseDto getSavingsAccount(Long currencyId, Long accountId) {
-        SavingsAccount savingsAccount = savingsAccountRepository.findByCurrencyIdAndAccountId(currencyId, accountId).orElse(null);
-        return savingsAccountMapper.toEntityResponseDto(savingsAccount);
+        if (CurrencyCodeEnum.RUB.getId().equals(currencyId)) ensureRubleAccount(accountId);
+        SavingsAccount account = savingsAccountRepository.findByCurrencyIdAndAccountId(currencyId, accountId).orElse(null);
+        return savingsAccountMapper.toEntityResponseDto(account);
+    }
+
+    private Currency findCurrency(String code) {
+        CurrencyCodeEnum currencyEnum;
+        try {
+            currencyEnum = CurrencyCodeEnum.valueOf(code.toUpperCase());
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException("Неверный код валюты");
+        }
+        return currencyRepository.findByCode(currencyEnum)
+                .orElseThrow(() -> new MissingCurrencyException("Валюта не найдена в базе данных"));
+    }
+
+    private SavingsAccount ensureRubleAccount(Long userId) {
+        return savingsAccountRepository.findByCurrencyIdAndAccountId(CurrencyCodeEnum.RUB.getId(), userId)
+                .orElseGet(() -> savingsAccountRepository.save(new SavingsAccount(
+                        userId,
+                        "SIM-RUB-" + userId + "-" + UUID.randomUUID().toString().substring(0, 8),
+                        CurrencyCodeEnum.RUB.getId(),
+                        new BigDecimal("100000.00"),
+                        BigDecimal.ZERO)));
+    }
+
+    private void validatePositive(BigDecimal amount, String label) {
+        if (amount == null || amount.signum() <= 0) throw new IllegalArgumentException(label + " должна быть больше нуля");
     }
 }

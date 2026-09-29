@@ -1,218 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мои транзакции</title>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Исполнения · Demo Broker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .navbar {
-            display: flex;
-            justify-content: space-around;
-            background: #fafafa;
-            border-bottom: 1px solid #ddd;
-        }
-        .navbar a {
-            padding: 12px 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
-        .navbar a.active {
-            color: #007bff;
-            border-bottom: 3px solid #007bff;
-        }
-        .navbar a:hover {
-            background: #f0f0f0;
-        }
-        .content {
-            padding: 20px;
-        }
-        h1 {
-            margin: 0 0 20px;
-            font-size: 1.4em;
-        }
-        .btn-refresh {
-            margin-bottom: 10px;
-            padding: 6px 12px;
-            background: #17a2b8;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-refresh:hover {
-            background: #138496;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background: #f0f0f0;
-        }
-        .no-data, .auth-error {
-            text-align: center;
-            color: #777;
-            padding: 30px 0;
-            font-size: 1.1em;
-        }
-        .auth-error a {
-            color: #007bff;
-            text-decoration: underline;
-        }
+        :root { font-family: system-ui, Arial, sans-serif; background: #f3f5f8; color: #172033; } body { margin: 0; }
+        nav { display: flex; gap: 22px; padding: 16px max(20px, calc((100% - 1120px) / 2)); background: #fff; border-bottom: 1px solid #e1e5eb; }
+        nav a { color: #526176; text-decoration: none; } nav a.active { color: #175cd3; font-weight: 700; }
+        main { max-width: 1120px; margin: 32px auto; padding: 0 18px; } .card { background: white; border: 1px solid #e1e5eb; border-radius: 12px; overflow: auto; }
+        table { width: 100%; min-width: 900px; border-collapse: collapse; } th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf0f4; } th { background: #fafbfc; color: #667085; font-size: 13px; }
+        .muted, .empty { color: #667085; } .empty { text-align: center; padding: 32px; }
+        @media(max-width:640px) { nav { gap: 12px; overflow: auto; white-space: nowrap; } }
     </style>
 </head>
-<body>
-<div class="container">
-    <nav class="navbar">
-        <a href="/portfolio.html">Портфель</a>
-        <a href="/markets.html">Рынки</a>
-        <a href="/accounts.html">Мои счета</a>
-        <a href="/orders.html">Мои заявки</a>
-        <a href="/transactions.html" class="active">Мои транзакции</a>
-    </nav>
-    <div class="content">
-        <h1>Мои транзакции</h1>
-        <button class="btn-refresh" onclick="loadTransactions()">Обновить</button>
-        <table id="txTable">
-            <thead>
-            <tr>
-                <th>Тикер</th>
-                <th>Тип</th>
-                <th>Цена</th>
-                <th>Комиссия</th>
-                <th>Количество</th>
-                <th>ID ордера</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr><td colspan="6" class="no-data">загрузка...</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
+<body><nav><a href="/portfolio.html">Портфель</a><a href="/markets.html">Рынок</a><a href="/accounts.html">Счета</a><a href="/orders.html">Заявки</a><a href="/transactions.html" class="active">Исполнения</a></nav>
+<main><h1>История исполнений</h1><p class="muted">Для каждого исполнения сохраняются цена и время снимка котировки, использованного в симуляции.</p>
+<div class="card"><table><thead><tr><th>ID</th><th>Инструмент</th><th>Сторона</th><th>Тип заявки</th><th>Цена исполнения</th><th>Комиссия</th><th>Количество</th><th>Источник котировки</th><th>Время данных</th><th>Время исполнения</th></tr></thead><tbody id="rows"><tr><td colspan="10" class="empty">Загрузка…</td></tr></tbody></table></div></main>
 <script>
-    const token = localStorage.getItem('jwt_token');
-    console.log("[TRANSACTIONS] Токен при загрузке страницы:", 
-        token ? `есть (длина ${token.length})` : "ОТСУТСТВУЕТ");
-
-    // Если токена нет — сразу показываем ошибку авторизации
-    if (!token) {
-        document.querySelector('#txTable tbody').innerHTML = `
-            <tr>
-                <td colspan="6" class="auth-error">
-                    Необходимо войти в систему<br>
-                    <a href="/login.html">Перейти на страницу входа</a>
-                </td>
-            </tr>`;
-    }
-
-    async function loadTransactions() {
-        const tbody = document.querySelector('#txTable tbody');
-
-        if (!token) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="auth-error">
-                        Необходимо войти в систему<br>
-                        <a href="/login.html">Перейти на страницу входа</a>
-                    </td>
-                </tr>`;
-            return;
-        }
-
-        tbody.innerHTML = '<tr><td colspan="6" class="no-data">загрузка...</td></tr>';
-
+    const token = localStorage.getItem('jwt_token'); const rows = document.getElementById('rows');
+    const label = value => ({ BUY: 'Покупка', SELL: 'Продажа', MARKET: 'Рыночная', LIMIT: 'Лимитная' }[value] || value || '—');
+    const price = value => value == null ? '—' : Number(value).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    const time = value => value ? new Date(value).toLocaleString('ru-RU') : '—';
+    async function load() {
+        if (!token) { rows.innerHTML = '<tr><td colspan="10" class="empty">Войдите в приложение, чтобы увидеть исполнения.</td></tr>'; return; }
         try {
-            console.log("[TRANSACTIONS] Запрос к /api/transactions/history с JWT");
-
-            const resp = await fetch('/api/transactions/history', {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (resp.status === 401) {
-                console.warn("[TRANSACTIONS] 401 — токен недействителен");
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="auth-error">
-                            Сессия истекла или токен недействителен (401)<br>
-                            <a href="/login.html">Войти заново</a> | 
-                            <a href="#" onclick="localStorage.removeItem('jwt_token'); location.reload();">Очистить токен</a>
-                        </td>
-                    </tr>`;
-                return;
-            }
-
-            if (!resp.ok) {
-                let errMsg = `HTTP ${resp.status}`;
-                try {
-                    const errJson = await resp.json();
-                    errMsg = `Ошибка ${errJson.status || resp.status}: ${errJson.message || errJson.error || 'Неизвестная ошибка'}`;
-                } catch {
-                    errMsg = await resp.text() || errMsg;
-                }
-                console.error(errMsg);
-                tbody.innerHTML = `<tr><td colspan="6" class="no-data">${errMsg}</td></tr>`;
-                return;
-            }
-
-            const list = await resp.json();
-
-            if (!Array.isArray(list) || list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="no-data">Нет транзакций</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = '';
-
-            for (const tx of list) {
+            const response = await fetch('/api/transactions/history', { headers: { Authorization: 'Bearer ' + token } });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const list = await response.json(); rows.replaceChildren();
+            if (!list.length) { rows.innerHTML = '<tr><td colspan="10" class="empty">Исполнений пока нет.</td></tr>'; return; }
+            list.forEach(tx => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${tx.ticker || '-'}</td>
-                    <td>${tx.transactionType || '-'}</td>
-                    <td>${tx.executedPrice !== undefined ? Number(tx.executedPrice).toFixed(2) : '-'}</td>
-                    <td>${tx.executedFee !== undefined ? Number(tx.executedFee).toFixed(2) : '-'}</td>
-                    <td>${tx.quantity ?? '-'}</td>
-                    <td>${tx.orderId ?? '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            }
-
-        } catch (err) {
-            console.error('[TRANSACTIONS] Ошибка загрузки транзакций:', err);
-            tbody.innerHTML = '<tr><td colspan="6" class="no-data">Ошибка загрузки транзакций</td></tr>';
-        }
+                [tx.id, tx.ticker, label(tx.side), label(tx.orderType), price(tx.executedPrice), price(tx.executedFee), tx.quantity, tx.dataSource, time(tx.marketDataAt), time(tx.executedAt)]
+                    .forEach(value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : value; tr.appendChild(td); });
+                rows.appendChild(tr);
+            });
+        } catch (error) { rows.innerHTML = '<tr><td colspan="10" class="empty">Не удалось загрузить исполнения: ' + error.message + '</td></tr>'; }
     }
-
-    // Запуск при загрузке страницы
-    window.addEventListener('DOMContentLoaded', () => {
-        if (token) {
-            loadTransactions();
-        }
-    });
-</script>
-</body>
-</html>
+    load(); setInterval(load, 15000);
+</script></body></html>

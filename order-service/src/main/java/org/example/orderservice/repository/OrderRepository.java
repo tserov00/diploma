@@ -2,50 +2,29 @@ package org.example.orderservice.repository;
 
 import jakarta.persistence.LockModeType;
 import org.example.orderservice.entity.Order;
+import org.example.orderservice.enumeration.OrderStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
-@Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    public List<Order> findAllByCustomerAccountId(Long customerId);
+    List<Order> findAllByCustomerAccountIdOrderByCreatedAtDesc(Long customerAccountId);
+    Optional<Order> findByIdAndCustomerAccountId(Long id, Long customerAccountId);
+    List<Order> findAllByStatusOrderByCreatedAtAsc(OrderStatusEnum status);
+
+    @Query("select distinct o.securityId from Order o where o.status in :statuses")
+    List<Long> findActiveSecurityIds(@Param("statuses") List<OrderStatusEnum> statuses);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-SELECT o FROM Order o
-WHERE o.orderType.type = org.example.orderservice.enumeration.OrderTypeEnum.SELL
-  AND o.orderStatus.status IN (
-        org.example.orderservice.enumeration.OrderStatusEnum.OPEN,
-        org.example.orderservice.enumeration.OrderStatusEnum.PARTIALLY_EXECUTED
-  )
-  AND o.securityId = :securityId
-  AND o.price <= :price
-ORDER BY o.createdAt ASC
-""")
-    List<Order> findBestSellMatchForBuy(
-            @Param("securityId") Long securityId,
-            @Param("price") BigDecimal price
-    );
+    @Query("select o from Order o where o.securityId = :securityId and o.status in :statuses order by o.createdAt asc")
+    List<Order> lockActiveOrdersForSecurity(@Param("securityId") Long securityId,
+                                            @Param("statuses") List<OrderStatusEnum> statuses);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-SELECT o FROM Order o
-WHERE o.orderType.type = org.example.orderservice.enumeration.OrderTypeEnum.BUY
-  AND o.orderStatus.status IN (
-        org.example.orderservice.enumeration.OrderStatusEnum.OPEN,
-        org.example.orderservice.enumeration.OrderStatusEnum.PARTIALLY_EXECUTED
-  )
-  AND o.securityId = :securityId
-  AND o.price >= :price
-ORDER BY o.createdAt ASC
-""")
-    List<Order> findBestBuyMatchForSell(
-            @Param("securityId") Long securityId,
-            @Param("price") BigDecimal price
-    );
+    @Query("select o from Order o where o.id = :id")
+    Optional<Order> lockById(@Param("id") Long id);
 }

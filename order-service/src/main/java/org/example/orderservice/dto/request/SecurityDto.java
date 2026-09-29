@@ -11,6 +11,7 @@ public class SecurityDto {
     private String currencyCode;
     private String stockExchangeName;
     private BigDecimal lastPrice;
+    private Integer lotSize;
 
     public SecurityDto() {}
 
@@ -88,4 +89,7 @@ public class SecurityDto {
     public void setLastPrice(BigDecimal lastPrice) {
         this.lastPrice = lastPrice;
     }
+
+    public Integer getLotSize() { return lotSize; }
+    public void setLotSize(Integer lotSize) { this.lotSize = lotSize; }
 }

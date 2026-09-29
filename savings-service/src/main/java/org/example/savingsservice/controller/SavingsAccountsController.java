@@ -6,7 +6,8 @@ import jakarta.validation.Valid;
 
 import org.example.savingsservice.dto.request.ReserveAmountRequestDto;
 import org.example.savingsservice.dto.request.SavingsAccountTransactionDto;
-import org.example.savingsservice.dto.request.TransferRequestDto;
+import org.example.savingsservice.dto.request.ExecutionSettlementRequestDto;
+import org.example.savingsservice.dto.request.ExecutionCreditRequestDto;
 import org.example.savingsservice.dto.response.SavingsAccountEntityResponseDto;
 import org.example.savingsservice.dto.response.SavingsAccountHistoryResponseDto;
 import org.example.savingsservice.dto.response.SavingsAccountResponseDto;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -69,48 +69,28 @@ public class SavingsAccountsController {
     }
 
     @PostMapping("/reserve")
-    public ResponseEntity<Void> reserveAmount(@RequestBody Map<String, Object> body, @RequestHeader("X-Request-Id") UUID requestId) {
-        Long userId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : null;
-        Long currencyId = body.get("currencyId") != null ? Long.valueOf(body.get("currencyId").toString()) : null;
-        BigDecimal amount = body.get("amount") != null ? new BigDecimal(body.get("amount").toString()) : null;
-
-        if (userId == null || currencyId == null || amount == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        savingsAccountsService.reserveAmount(userId, currencyId, amount, requestId);
+    public ResponseEntity<Void> reserveAmount(@Valid @RequestBody ReserveAmountRequestDto body, @RequestHeader("X-Request-Id") UUID requestId) {
+        savingsAccountsService.reserveAmount(body.getUserId(), body.getCurrencyId(), body.getAmount(), requestId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/release")
-    public ResponseEntity<Void> releaseAmount(@RequestBody Map<String, Object> body, @RequestHeader("X-Request-Id") UUID requestId) {
-        Long userId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : null;
-        Long currencyId = body.get("currencyId") != null ? Long.valueOf(body.get("currencyId").toString()) : null;
-        BigDecimal amount = body.get("amount") != null ? new BigDecimal(body.get("amount").toString()) : null;
-
-        if (userId == null || currencyId == null || amount == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        savingsAccountsService.releaseAmount(userId, currencyId, amount, requestId);
+    public ResponseEntity<Void> releaseAmount(@Valid @RequestBody ReserveAmountRequestDto body, @RequestHeader("X-Request-Id") UUID requestId) {
+        savingsAccountsService.releaseAmount(body.getUserId(), body.getCurrencyId(), body.getAmount(), requestId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PostMapping("/transfer")
-    public ResponseEntity<Void> transferAmount(@RequestBody Map<String, Object> body, @RequestHeader("X-Request-Id") UUID requestId) {
-        Long senderId = body.get("senderId") != null ? Long.valueOf(body.get("senderId").toString()) : null;
-        Long receiverId = body.get("receiverId") != null ? Long.valueOf(body.get("receiverId").toString()) : null;
-        Long currencyId = body.get("currencyId") != null ? Long.valueOf(body.get("currencyId").toString()) : null;
-        BigDecimal transferAmount = body.get("transferAmount") != null
-                ? new BigDecimal(body.get("transferAmount").toString()) : null;
-        BigDecimal fee = body.get("fee") != null
-                ? new BigDecimal(body.get("fee").toString()) : null;
+    @PostMapping("/settle-execution")
+    public ResponseEntity<Void> settleExecution(@RequestBody ExecutionSettlementRequestDto body,
+                                                @RequestHeader("X-Request-Id") UUID requestId) {
+        savingsAccountsService.settleReservedExecution(body, requestId);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
-        if (senderId == null || receiverId == null || currencyId == null || transferAmount == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        savingsAccountsService.transferAmount(senderId, receiverId, currencyId, transferAmount, fee, requestId);
+    @PostMapping("/credit-execution")
+    public ResponseEntity<Void> creditExecution(@RequestBody ExecutionCreditRequestDto body,
+                                                @RequestHeader("X-Request-Id") UUID requestId) {
+        savingsAccountsService.creditExecution(body.getUserId(), body.getCurrencyId(), body.getAmount(), requestId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }
