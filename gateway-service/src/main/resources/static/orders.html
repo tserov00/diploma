@@ -2,23 +2,22 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Мои заявки · Demo Broker</title>
-    <style>
-        :root { font-family: system-ui, Arial, sans-serif; background: #f3f5f8; color: #172033; } body { margin: 0; }
-        nav { display: flex; gap: 22px; padding: 16px max(20px, calc((100% - 1120px) / 2)); background: #fff; border-bottom: 1px solid #e1e5eb; }
-        nav a { color: #526176; text-decoration: none; } nav a.active { color: #175cd3; font-weight: 700; }
-        main { max-width: 1120px; margin: 32px auto; padding: 0 18px; } .card { background: white; border: 1px solid #e1e5eb; border-radius: 12px; overflow: auto; }
-        table { width: 100%; min-width: 900px; border-collapse: collapse; } th, td { padding: 12px; text-align: left; border-bottom: 1px solid #edf0f4; } th { background: #fafbfc; color: #667085; font-size: 13px; }
-        .muted, .empty { color: #667085; } .empty { text-align: center; padding: 32px; } button { border: 0; background: #fff0f0; color: #b42318; border-radius: 6px; padding: 7px 10px; cursor: pointer; }
-        @media(max-width:640px) { nav { gap: 12px; overflow: auto; white-space: nowrap; } }
-    </style>
+
+    <link rel="stylesheet" href="/app.css">
 </head>
-<body><nav><a href="/portfolio.html">Портфель</a><a href="/markets.html">Рынок</a><a href="/accounts.html">Счета</a><a href="/orders.html" class="active">Заявки</a><a href="/transactions.html">Исполнения</a></nav>
+<body><nav><a href="/portfolio.html" class="brand" aria-label="Demo Broker — портфель"><span class="brand-mark">D</span><span class="brand-name">Demo Broker</span></a><a href="/portfolio.html">Портфель</a><a href="/markets.html">Рынок</a><a href="/accounts.html">Счета</a><a href="/orders.html" class="active">Заявки</a><a href="/transactions.html">Исполнения</a></nav>
 <main><h1>Мои заявки</h1><p class="muted">Открытая лимитная заявка резервирует деньги или бумаги до исполнения либо отмены.</p>
 <div class="card"><table><thead><tr><th>ID</th><th>Инструмент</th><th>Сторона</th><th>Тип</th><th>Лимит</th><th>Количество</th><th>Исполнено</th><th>Остаток</th><th>Статус</th><th>Создана</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="11" class="empty">Загрузка…</td></tr></tbody></table></div></main>
 <script>
     const token = localStorage.getItem('jwt_token'); const rows = document.getElementById('rows');
     const label = value => ({ BUY: 'Покупка', SELL: 'Продажа', MARKET: 'Рыночная', LIMIT: 'Лимитная', OPEN: 'Открыта', PARTIALLY_FILLED: 'Частично исполнена', FILLED: 'Исполнена', CANCELED: 'Отменена', CANCEL_PENDING: 'Отмена…', PROCESSING: 'Исполнение…', REJECTED: 'Отклонена', PENDING: 'Создаётся' }[value] || value || '—');
     const price = value => value == null ? '—' : Number(value).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    function instrumentCell(ticker, companyName) {
+        const td = document.createElement('td'); const content = document.createElement('div'); content.className = 'instrument-cell';
+        const symbol = document.createElement('span'); symbol.className = 'ticker'; symbol.textContent = ticker || '—'; content.appendChild(symbol);
+        if (companyName) { const name = document.createElement('span'); name.className = 'instrument-company'; name.textContent = companyName; content.appendChild(name); }
+        td.appendChild(content); return td;
+    }
     async function cancel(id) {
         if (!confirm('Отменить заявку #' + id + '?')) return;
         const response = await fetch('/api/orders/' + encodeURIComponent(id), { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
@@ -33,8 +32,11 @@
             const list = await response.json(); rows.replaceChildren();
             if (!list.length) { rows.innerHTML = '<tr><td colspan="11" class="empty">Заявок пока нет.</td></tr>'; return; }
             list.forEach(order => {
-                const tr = document.createElement('tr'); const cells = [order.id, order.ticker, label(order.side), label(order.orderType), price(order.limitPrice), order.quantity, order.filledQuantity, order.remainingQuantity, label(order.status), order.createdAt ? new Date(order.createdAt).toLocaleString('ru-RU') : '—'];
+                const tr = document.createElement('tr'); const cells = [order.id];
                 cells.forEach(value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : value; tr.appendChild(td); });
+                tr.appendChild(instrumentCell(order.ticker, order.companyName));
+                [label(order.side), label(order.orderType), price(order.limitPrice), order.quantity, order.filledQuantity, order.remainingQuantity, label(order.status), order.createdAt ? new Date(order.createdAt).toLocaleString('ru-RU') : '—']
+                    .forEach(value => { const td = document.createElement('td'); td.textContent = value == null ? '—' : value; tr.appendChild(td); });
                 const action = document.createElement('td');
                 if (['OPEN', 'PARTIALLY_FILLED'].includes(order.status)) { const button = document.createElement('button'); button.textContent = 'Отменить'; button.onclick = () => cancel(order.id); action.appendChild(button); }
                 tr.appendChild(action); rows.appendChild(tr);

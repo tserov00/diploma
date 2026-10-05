@@ -21,14 +21,21 @@ public class GatewayOrderController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> createOrder(@Valid @RequestBody OrderDto order, @AuthenticationPrincipal UserPrincipal user) {
-        return orderWebClient.post()
+    public ResponseEntity<byte[]> createOrder(@Valid @RequestBody OrderDto order, @AuthenticationPrincipal UserPrincipal user) {
+        ResponseEntity<byte[]> downstream = orderWebClient.post()
                 .uri("/api/orders")
                 .header("User-Id", String.valueOf(user.getUserId()))
                 .bodyValue(order)
-                .retrieve()
-                .toBodilessEntity()
+                .exchangeToMono(response -> response.toEntity(byte[].class))
                 .block();
+
+        if (downstream == null) return ResponseEntity.internalServerError().build();
+
+        ResponseEntity.BodyBuilder response = ResponseEntity.status(downstream.getStatusCode());
+        if (downstream.getHeaders().getContentType() != null) {
+            response.contentType(downstream.getHeaders().getContentType());
+        }
+        return response.body(downstream.getBody());
     }
 
     @DeleteMapping("/{id}")

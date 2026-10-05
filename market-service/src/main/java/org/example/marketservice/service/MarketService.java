@@ -51,7 +51,7 @@ public class MarketService {
     public MarketQuoteResponseDto getQuoteById(Long id) {
         Security security = findSecurity(id);
         refreshQuote(security);
-        return toQuoteDto(security);
+        return marketMapper.toQuoteResponseDto(security);
     }
 
     @Transactional(readOnly = true)
@@ -99,25 +99,4 @@ public class MarketService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Инструмент не найден"));
     }
 
-    private MarketQuoteResponseDto toQuoteDto(Security security) {
-        MarketQuoteResponseDto dto = new MarketQuoteResponseDto();
-        dto.setSecurityId(security.getId());
-        dto.setTicker(security.getTicker());
-        dto.setLastPrice(security.getLastPrice());
-        dto.setBidPrice(security.getBidPrice());
-        dto.setAskPrice(security.getAskPrice());
-        dto.setBidVolume(security.getBidVolume());
-        dto.setAskVolume(security.getAskVolume());
-        dto.setLotSize(security.getLotSize());
-        dto.setDayHigh(security.getDayHigh());
-        dto.setDayLow(security.getDayLow());
-        dto.setDayVolume(security.getDayVolume());
-        dto.setLastPriceAt(security.getLastPriceAt());
-        dto.setQuoteUpdatedAt(security.getQuoteUpdatedAt());
-        dto.setQuoteReceivedAt(security.getQuoteReceivedAt());
-        dto.setSource(security.getQuoteSource());
-        dto.setDelayed("ALOR".equals(security.getQuoteSource()));
-        dto.setSnapshotKey(security.getSnapshotKey());
-        return dto;
-    }
 }

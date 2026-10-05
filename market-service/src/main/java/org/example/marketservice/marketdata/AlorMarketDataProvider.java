@@ -1,6 +1,6 @@
 package org.example.marketservice.marketdata;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -111,6 +111,12 @@ public class AlorMarketDataProvider implements MarketDataProvider {
     private JsonNode unwrap(JsonNode root) {
         if (root == null || root.isNull()) {
             throw new IllegalStateException("ALOR вернул пустой ответ котировки");
+        }
+        if (root.isArray()) {
+            if (root.isEmpty()) {
+                throw new IllegalStateException("ALOR вернул пустой список котировок");
+            }
+            root = root.get(0);
         }
         if (root.has("data") && root.get("data").isObject()) return root.get("data");
         if (root.has("quote") && root.get("quote").isObject()) return root.get("quote");

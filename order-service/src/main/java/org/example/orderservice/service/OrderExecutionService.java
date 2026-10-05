@@ -76,12 +76,11 @@ public class OrderExecutionService {
         if (quoteVolume == null || quoteVolume <= 0) return null;
         long alreadyUsed = buysConsumeAsk ? nonNull(usage.getAskUsed()) : nonNull(usage.getBidUsed());
         long available = Math.max(0, quoteVolume - alreadyUsed);
-        int lotSize = Math.max(1, Optional.ofNullable(quote.getLotSize()).orElse(1));
 
         for (Order order : activeOrders) {
             if (order.getRemainingQuantity() == null || order.getRemainingQuantity() <= 0) continue;
             long candidate = Math.min(order.getRemainingQuantity(), available);
-            int fillQuantity = (int) (candidate - Math.floorMod(candidate, lotSize));
+            int fillQuantity = (int) candidate;
             if (fillQuantity <= 0) continue;
             BigDecimal price = buysConsumeAsk ? quote.getAskPrice() : quote.getBidPrice();
             if (price == null || price.signum() <= 0) return null;

@@ -6,19 +6,18 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="savings-service" />
-        <module name="auth-service" />
-        <module name="order-service" />
         <module name="gateway-service" />
       </profile>
-      <profile name="Annotation profile for market-service" enabled="true">
+      <profile name="Annotation profile for savings-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.5.5.Final/mapstruct-1.5.5.Final.jar" />
         </processorPath>
+        <module name="savings-service" />
+        <module name="auth-service" />
+        <module name="order-service" />
         <module name="market-service" />
       </profile>
     </annotationProcessing>

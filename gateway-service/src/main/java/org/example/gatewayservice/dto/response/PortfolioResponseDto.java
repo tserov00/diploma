@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class PortfolioResponseDto {
     private Long securityId;
     private String ticker;
+    private String companyName;
     private Integer totalQuantity;
     private BigDecimal avgBuyPrice;
     private BigDecimal currentPrice;
@@ -37,6 +38,14 @@ public String getTicker() {
 
 public void setTicker(String ticker) {
     this.ticker = ticker;
+}
+
+public String getCompanyName() {
+    return companyName;
+}
+
+public void setCompanyName(String companyName) {
+    this.companyName = companyName;
 }
 
 public Integer getTotalQuantity() {

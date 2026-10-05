@@ -5,8 +5,10 @@ import org.example.orderservice.dto.request.OrderDto;
 import org.example.orderservice.dto.response.OrderResponseDto;
 import org.example.orderservice.service.OrderService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -24,6 +26,12 @@ public class OrderController {
     public ResponseEntity<Void> createOrder(@Valid @RequestBody OrderDto orderDto, @RequestHeader("User-Id") Long userId) {
         orderService.createOrder(orderDto, userId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ProblemDetail> handleOrderError(ResponseStatusException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(exception.getStatusCode(), exception.getReason());
+        return ResponseEntity.status(exception.getStatusCode()).body(problem);
     }
 
     @DeleteMapping("/{id}")

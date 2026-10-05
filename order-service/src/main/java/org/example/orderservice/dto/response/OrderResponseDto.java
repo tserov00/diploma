@@ -6,6 +6,7 @@ import java.time.Instant;
 public class OrderResponseDto {
     private Long id;
     private String ticker;
+    private String companyName;
     private String side;
     private String orderType;
     private BigDecimal limitPrice;
@@ -20,6 +21,8 @@ public class OrderResponseDto {
     public void setId(Long id) { this.id = id; }
     public String getTicker() { return ticker; }
     public void setTicker(String ticker) { this.ticker = ticker; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
     public String getSide() { return side; }
     public void setSide(String side) { this.side = side; }
     public String getOrderType() { return orderType; }

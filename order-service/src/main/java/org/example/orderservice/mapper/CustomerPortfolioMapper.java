@@ -10,6 +10,7 @@ import org.mapstruct.Mapping;
 public interface CustomerPortfolioMapper {
     @Mapping(source = "security.id", target = "securityId")
     @Mapping(source = "security.ticker", target = "ticker")
+    @Mapping(source = "security.companyName", target = "companyName")
     @Mapping(source = "security.lastPrice", target = "currentPrice")
     @Mapping(source = "security.currencyCode", target = "currencyCode")
     PortfolioResponseDto toResponseDto(CustomerPortfolio customerPortfolio, SecurityDto security);

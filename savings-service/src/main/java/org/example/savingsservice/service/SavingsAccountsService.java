@@ -186,7 +186,7 @@ public class SavingsAccountsService {
                         userId,
                         "SIM-RUB-" + userId + "-" + UUID.randomUUID().toString().substring(0, 8),
                         CurrencyCodeEnum.RUB.getId(),
-                        new BigDecimal("100000.00"),
+                        BigDecimal.ZERO,
                         BigDecimal.ZERO)));
     }
 

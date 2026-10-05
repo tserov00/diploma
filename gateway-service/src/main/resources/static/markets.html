@@ -4,34 +4,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Рынок · Demo Broker</title>
-    <style>
-        :root { color-scheme: light; font-family: system-ui, Arial, sans-serif; background: #f3f5f8; color: #172033; }
-        body { margin: 0; }
-        nav { display: flex; gap: 22px; padding: 16px max(20px, calc((100% - 1120px) / 2)); background: #fff; border-bottom: 1px solid #e1e5eb; }
-        nav a { color: #526176; text-decoration: none; }
-        nav a.active { color: #175cd3; font-weight: 700; }
-        main { max-width: 1120px; margin: 32px auto; padding: 0 18px; }
-        h1 { margin-bottom: 8px; }
-        .hint { color: #667085; margin: 0 0 20px; }
-        .card { background: white; border: 1px solid #e1e5eb; border-radius: 12px; overflow: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 720px; }
-        th, td { padding: 13px 15px; text-align: left; border-bottom: 1px solid #edf0f4; white-space: nowrap; }
-        th { color: #667085; font-size: 13px; background: #fafbfc; }
-        .ticker { font-weight: 700; color: #172033; }
-        .muted { color: #667085; font-size: 13px; }
-        .link { color: #175cd3; text-decoration: none; font-weight: 600; }
-        .empty { padding: 34px; text-align: center; color: #667085; }
-        @media (max-width: 640px) { nav { gap: 12px; overflow: auto; white-space: nowrap; } main { margin-top: 22px; } }
-    </style>
+
+    <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-<nav>
+<nav><a href="/portfolio.html" class="brand" aria-label="Demo Broker — портфель"><span class="brand-mark">D</span><span class="brand-name">Demo Broker</span></a>
     <a href="/portfolio.html">Портфель</a><a href="/markets.html" class="active">Рынок</a>
     <a href="/accounts.html">Счета</a><a href="/orders.html">Заявки</a><a href="/transactions.html">Исполнения</a>
 </nav>
 <main>
     <h1>Акции Московской биржи</h1>
     <p class="hint">Котировки верхнего уровня bid/ask. ALOR в анонимном режиме возвращает задержанные данные; время ниже — время снимка у источника.</p>
+    <div class="market-search">
+        <label for="marketSearch">Поиск инструмента</label>
+        <input id="marketSearch" type="search" placeholder="Тикер или название компании" autocomplete="off">
+        <p id="marketSearchStatus" class="muted" role="status" aria-live="polite"></p>
+    </div>
     <div class="card"><table>
         <thead><tr><th>Инструмент</th><th>Последняя цена</th><th>Bid</th><th>Ask</th><th>Данные</th><th></th></tr></thead>
         <tbody id="rows"><tr><td colspan="6" class="empty">Загрузка инструментов…</td></tr></tbody>
@@ -40,31 +28,47 @@
 <script>
     const token = localStorage.getItem('jwt_token');
     const rows = document.getElementById('rows');
+    const marketSearch = document.getElementById('marketSearch');
+    const marketSearchStatus = document.getElementById('marketSearchStatus');
+    let securities = [];
     const money = value => value == null ? '—' : Number(value).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
     const showTime = value => value ? new Date(value).toLocaleString('ru-RU') : 'Котировка загружается';
+    function renderSecurities() {
+        const query = marketSearch.value.trim().toLocaleLowerCase('ru-RU');
+        const filtered = securities.filter(item => (item.ticker + ' ' + item.companyName).toLocaleLowerCase('ru-RU').includes(query));
+        rows.replaceChildren();
+        if (!filtered.length) {
+            const tr = document.createElement('tr'); const td = document.createElement('td');
+            td.colSpan = 6; td.className = 'empty'; td.textContent = query ? 'По запросу ничего не найдено.' : 'Инструменты не найдены.';
+            tr.appendChild(td); rows.appendChild(tr);
+            marketSearchStatus.textContent = query ? 'Совпадений: 0' : '';
+            return;
+        }
+        marketSearchStatus.textContent = query ? 'Найдено инструментов: ' + filtered.length : 'Всего инструментов: ' + filtered.length;
+        filtered.forEach(item => {
+            const tr = document.createElement('tr');
+            const values = [item.ticker + ' · ' + item.companyName, money(item.lastPrice), money(item.bidPrice), money(item.askPrice),
+                (item.quoteSource === 'ALOR' ? 'ALOR · задержка' : item.quoteSource === 'DEMO' ? 'DEMO · симуляция' : 'Нет снимка') + ' · ' + showTime(item.quoteUpdatedAt)];
+            values.forEach((value, index) => {
+                const td = document.createElement('td');
+                if (index === 0) { td.className = 'ticker'; td.textContent = value; }
+                else { if (index === 4) td.className = 'muted'; td.textContent = value; }
+                tr.appendChild(td);
+            });
+            const action = document.createElement('td');
+            const link = document.createElement('a'); link.className = 'link'; link.href = '/security.html?id=' + encodeURIComponent(item.id); link.textContent = 'Открыть';
+            action.appendChild(link); tr.appendChild(action); rows.appendChild(tr);
+        });
+    }
+    marketSearch.addEventListener('input', renderSecurities);
     async function load() {
-        if (!token) { rows.innerHTML = '<tr><td colspan="6" class="empty">Войдите в приложение, чтобы открыть рынок.</td></tr>'; return; }
+        if (!token) { rows.innerHTML = '<tr><td colspan="6" class="empty">Войдите в приложение, чтобы открыть рынок.</td></tr>'; marketSearchStatus.textContent = ''; return; }
         try {
             const response = await fetch('/api/market/securities', { headers: { Authorization: 'Bearer ' + token } });
             if (!response.ok) throw new Error('HTTP ' + response.status);
-            const securities = await response.json();
-            rows.replaceChildren();
-            if (!securities.length) { rows.innerHTML = '<tr><td colspan="6" class="empty">Инструменты не найдены.</td></tr>'; return; }
-            securities.forEach(item => {
-                const tr = document.createElement('tr');
-                const values = [item.ticker + ' · ' + item.companyName, money(item.lastPrice), money(item.bidPrice), money(item.askPrice),
-                    (item.quoteSource === 'ALOR' ? 'ALOR · задержка' : item.quoteSource === 'DEMO' ? 'DEMO · симуляция' : 'Нет снимка') + ' · ' + showTime(item.quoteUpdatedAt)];
-                values.forEach((value, index) => {
-                    const td = document.createElement('td');
-                    if (index === 0) { td.className = 'ticker'; td.textContent = value; }
-                    else { if (index === 4) td.className = 'muted'; td.textContent = value; }
-                    tr.appendChild(td);
-                });
-                const action = document.createElement('td');
-                const link = document.createElement('a'); link.className = 'link'; link.href = '/security.html?id=' + encodeURIComponent(item.id); link.textContent = 'Открыть';
-                action.appendChild(link); tr.appendChild(action); rows.appendChild(tr);
-            });
-        } catch (error) { rows.innerHTML = '<tr><td colspan="6" class="empty">Не удалось загрузить рынок. Проверьте, запущены ли сервисы.</td></tr>'; }
+            securities = await response.json();
+            renderSecurities();
+        } catch (error) { rows.innerHTML = '<tr><td colspan="6" class="empty">Не удалось загрузить рынок. Проверьте, запущены ли сервисы.</td></tr>'; marketSearchStatus.textContent = ''; }
     }
     load();
     setInterval(load, 60000);

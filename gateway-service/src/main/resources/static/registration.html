@@ -1,142 +1,192 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Регистрация</title>
-    <style>
-        body {
-          font-family: Arial, sans-serif;
-          background-color: #f5f5f5;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-        }
-        .container {
-          background-color: #fff;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          max-width: 400px;
-          width: 100%;
-        }
-        h1 {
-          text-align: center;
-          margin-bottom: 20px;
-        }
-        .form-group {
-          margin-bottom: 15px;
-        }
-        label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-        }
-        input, textarea {
-          width: 100%;
-          padding: 8px;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          box-sizing: border-box;
-        }
-        button {
-          width: 100%;
-          padding: 10px;
-          border: none;
-          border-radius: 4px;
-          background-color: #007bff;
-          color: #fff;
-          font-size: 16px;
-          cursor: pointer;
-        }
-        button:hover {
-          background-color: #0056b3;
-        }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#153d32">
+    <title>Регистрация · Demo Broker</title>
+    <link rel="stylesheet" href="/app.css">
 </head>
-<body>
-<div class="container">
-    <h1>Регистрация</h1>
-    <form id="regForm">
-        <div class="form-group">
-            <label for="firstName">Имя</label>
-            <input type="text" id="firstName" name="firstName" required>
+<body class="auth-page">
+<main class="auth-layout">
+    <aside class="auth-intro">
+        <a class="auth-brand" href="/index.html"><span class="brand-mark">D</span><span>Demo Broker</span></a>
+        <div class="auth-copy">
+            <p class="auth-kicker">Демо-брокер</p>
+            <h1>Начните с<br>простого шага.</h1>
+            <p>Создайте профиль, чтобы следить за рынком и управлять своим демо-портфелем.</p>
         </div>
-        <div class="form-group">
-            <label for="lastName">Фамилия</label>
-            <input type="text" id="lastName" name="lastName" required>
-        </div>
-        <div class="form-group">
-            <label for="birthDate">Дата рождения</label>
-            <input type="date" id="birthDate" name="birthDate" required>
-        </div>
-        <div class="form-group">
-            <label for="passportSeries">Номер и серия паспорта</label>
-            <input type="text" id="passportSeries" name="passportSeries" placeholder="1234 567890" required>
-        </div>
-        <div class="form-group">
-            <label for="address">Адрес</label>
-            <textarea id="address" name="address" rows="3" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="taxId">ИНН</label>
-            <input type="text" id="taxId" name="taxId" placeholder="123456789012" required>
-        </div>
-        <div class="form-group">
-            <label for="phoneNumber">Номер телефона</label>
-            <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="+7 (___) ___-__-__" required>
-        </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        <div class="form-group">
-            <label for="login">Login</label>
-            <input type="text" id="login" name="login" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <button type="submit">Зарегистрироваться</button>
-    </form>
-</div>
-
+        <p class="auth-footnote">Инвестиционный кабинет · Demo Broker</p>
+    </aside>
+    <section class="auth-card">
+        <h2>Создать аккаунт</h2>
+        <p class="auth-description">Заполните данные, чтобы открыть кабинет.</p>
+        <form id="regForm" class="auth-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="firstName">Имя</label>
+                    <input type="text" id="firstName" name="firstName" placeholder="Например, Анна" autocomplete="given-name" minlength="2" maxlength="50" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Фамилия</label>
+                    <input type="text" id="lastName" name="lastName" placeholder="Например, Иванова" autocomplete="family-name" minlength="2" maxlength="50" required>
+                </div>
+                <div class="form-group">
+                    <label for="birthDate">Дата рождения</label>
+                    <input type="date" id="birthDate" name="birthDate" autocomplete="bday" required>
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">Номер телефона</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="+79991234567" autocomplete="tel" inputmode="tel" minlength="10" maxlength="12" pattern="\+?[0-9]{10,11}" title="Введите номер из 10 или 11 цифр; знак + можно указать в начале" required>
+                </div>
+                <div class="form-group">
+                    <label for="passportSeries">Серия и номер паспорта</label>
+                    <input type="text" id="passportSeries" name="passportSeries" placeholder="Например, 1234567890" autocomplete="off" inputmode="numeric" minlength="10" maxlength="10" pattern="[0-9]{10}" title="Введите серию и номер паспорта: ровно 10 цифр" required>
+                </div>
+                <div class="form-group">
+                    <label for="taxId">ИНН</label>
+                    <input type="text" id="taxId" name="taxId" placeholder="10 или 12 цифр" autocomplete="off" inputmode="numeric" minlength="10" maxlength="12" pattern="([0-9]{10}|[0-9]{12})" title="ИНН должен содержать 10 или 12 цифр" required>
+                </div>
+                <div class="form-group full">
+                    <label for="address">Адрес</label>
+                    <textarea id="address" name="address" placeholder="Город, улица, дом, квартира" autocomplete="street-address" maxlength="255" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="email">Электронная почта</label>
+                    <input type="email" id="email" name="email" placeholder="name@example.com" autocomplete="email" minlength="6" maxlength="100" required>
+                </div>
+                <div class="form-group">
+                    <label for="login">Логин</label>
+                    <input type="text" id="login" name="login" placeholder="От 3 до 50 символов" autocomplete="username" minlength="3" maxlength="50" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" placeholder="Не менее 8 символов" autocomplete="new-password" minlength="8" aria-describedby="passwordHint passwordStrengthLabel" required>
+                </div>
+                <div class="form-group">
+                    <label for="passwordConfirmation">Повторите пароль</label>
+                    <input type="password" id="passwordConfirmation" name="passwordConfirmation" placeholder="Введите пароль еще раз" autocomplete="new-password" minlength="8" required>
+                </div>
+                <div class="password-meter" id="passwordMeter" data-level="0" aria-live="polite">
+                    <div class="password-meter-track" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+                    <span class="password-meter-label" id="passwordStrengthLabel">Надежность пароля: не указан</span>
+                    <span class="password-meter-label" id="passwordHint">Используйте не менее 8 символов, цифры и буквы.</span>
+                </div>
+            </div>
+            <p id="formFeedback" class="form-feedback" role="alert" aria-live="polite"></p>
+            <button id="submitButton" type="submit">Зарегистрироваться</button>
+            <p class="auth-switch">Уже есть аккаунт? <a href="/login.html">Войти</a></p>
+        </form>
+    </section>
+</main>
 <script>
-    document.getElementById('regForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const data = Object.fromEntries(new FormData(form).entries());
-      try {
-        const resp = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
+    const registrationForm = document.getElementById('regForm');
+    const passwordInput = document.getElementById('password');
+    const passwordConfirmation = document.getElementById('passwordConfirmation');
+    const passwordMeter = document.getElementById('passwordMeter');
+    const passwordStrengthLabel = document.getElementById('passwordStrengthLabel');
+    const formFeedback = document.getElementById('formFeedback');
+    const submitButton = document.getElementById('submitButton');
+    const birthDateInput = document.getElementById('birthDate');
+    const today = new Date();
+    birthDateInput.max = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const requiredTextFields = ['firstName', 'lastName', 'passportSeries', 'address', 'taxId', 'phoneNumber', 'email', 'login']
+        .map(id => document.getElementById(id));
+
+    function limitNumericInput(field, maxDigits, allowLeadingPlus = false) {
+        field.addEventListener('input', () => {
+            const plus = allowLeadingPlus && field.value.startsWith('+') ? '+' : '';
+            const digits = field.value.replace(/\D/g, '').slice(0, maxDigits);
+            field.value = plus + digits;
         });
+    }
 
-        if (resp.ok) {
-          // успешная регистрация → редирект
-          window.location.href = '/login.html';
-        } else {
-          // читаем JSON из ответа
-          const err = await resp.json();
-          // выводим красиво
-          alert(
-            `Ошибка ${err.status} (${err.error})\n` +
-            `Сообщение: ${err.message}\n` +
-            `Время: ${err.timestamp}`
-          );
+    limitNumericInput(document.getElementById('phoneNumber'), 11, true);
+    limitNumericInput(document.getElementById('passportSeries'), 10);
+    limitNumericInput(document.getElementById('taxId'), 12);
+
+    function validateTrimmedFields() {
+        requiredTextFields.forEach(field => {
+            field.setCustomValidity(field.value.trim() ? '' : 'Заполните это поле.');
+        });
+    }
+
+    requiredTextFields.forEach(field => field.addEventListener('input', () => field.setCustomValidity('')));
+
+    function updatePasswordStrength() {
+        const password = passwordInput.value;
+        const categories = [/[a-zа-яё]/.test(password), /[A-ZА-ЯЁ]/.test(password), /[0-9]/.test(password), /[^a-zа-яё0-9]/i.test(password)].filter(Boolean).length;
+        let level = 0;
+        let label = 'Надежность пароля: не указан';
+
+        if (password.length > 0) {
+            level = 1;
+            label = 'Надежность пароля: слабый';
+            if (password.length >= 8 && categories >= 2) {
+                level = 2;
+                label = 'Надежность пароля: средний';
+            }
+            if (password.length >= 10 && categories >= 3) {
+                level = 3;
+                label = 'Надежность пароля: хороший';
+            }
+            if (password.length >= 14 && categories >= 3) {
+                level = 4;
+                label = 'Надежность пароля: высокий';
+            }
         }
-      } catch (err) {
-        alert('Сетевая ошибка: ' + err.message);
-      }
-    });
-</script>
 
+        passwordMeter.dataset.level = String(level);
+        passwordStrengthLabel.textContent = label;
+        passwordConfirmation.setCustomValidity(passwordConfirmation.value && passwordConfirmation.value !== password ? 'Пароли не совпадают.' : '');
+    }
+
+    passwordInput.addEventListener('input', updatePasswordStrength);
+    passwordConfirmation.addEventListener('input', updatePasswordStrength);
+
+    registrationForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        formFeedback.textContent = '';
+        formFeedback.classList.remove('success');
+        updatePasswordStrength();
+        validateTrimmedFields();
+
+        if (!registrationForm.reportValidity()) return;
+
+        const data = Object.fromEntries(new FormData(registrationForm).entries());
+        delete data.passwordConfirmation;
+        for (const key of ['firstName', 'lastName', 'passportSeries', 'address', 'taxId', 'phoneNumber', 'email', 'login']) data[key] = data[key].trim();
+        submitButton.disabled = true;
+        submitButton.textContent = 'Создаем аккаунт…';
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                let message = 'Не удалось зарегистрироваться. Проверьте данные и попробуйте еще раз.';
+                try {
+                    const error = await response.json();
+                    message = error.message || error.error || message;
+                } catch (_) {}
+                throw new Error(message);
+            }
+
+            formFeedback.classList.add('success');
+            formFeedback.textContent = 'Аккаунт создан. Переходим ко входу…';
+            window.setTimeout(() => { window.location.href = '/login.html'; }, 1200);
+        } catch (error) {
+            formFeedback.textContent = error.message || 'Не удалось зарегистрироваться. Проверьте подключение и повторите попытку.';
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Зарегистрироваться';
+        }
+    });
+
+    updatePasswordStrength();
+</script>
 </body>
 </html>

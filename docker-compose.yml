@@ -173,7 +173,6 @@ services:
       MARKET_SERVICE_URL: http://market-service:7073
       SAVINGS_SERVICE_URL: http://savings-service:7072
       ORDER_PROCESSING_INTERVAL_MS: ${ORDER_PROCESSING_INTERVAL_MS:-10000}
-      MARKET_QUOTE_MAX_AGE_SECONDS: ${MARKET_QUOTE_MAX_AGE_SECONDS:-2700}
     ports:
       - "7074:7074"
     depends_on:

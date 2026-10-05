@@ -1,97 +1,82 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 400px;
-            width: 100%;
-        }
-        h1 { text-align: center; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; border: none; border-radius: 4px; background-color: #007bff; color: #fff; font-size: 16px; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#153d32">
+    <title>Вход · Demo Broker</title>
+    <link rel="stylesheet" href="/app.css">
 </head>
-<body>
-<div class="container">
-    <h1>Вход</h1>
-    <form id="loginForm">
-        <div class="form-group">
-            <label for="login">Логин</label>
-            <input type="text" id="login" name="login" required>
+<body class="auth-page">
+<main class="auth-layout">
+    <aside class="auth-intro">
+        <a class="auth-brand" href="/index.html"><span class="brand-mark">D</span><span>Demo Broker</span></a>
+        <div class="auth-copy">
+            <p class="auth-kicker">Демо-брокер</p>
+            <h1>Ваш рынок.<br>Ваш темп.</h1>
+            <p>Войдите, чтобы вернуться к котировкам, счетам и портфелю.</p>
         </div>
-        <div class="form-group">
-            <label for="password">Пароль</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <button type="submit">Войти</button>
-    </form>
-</div>
-
+        <p class="auth-footnote">Инвестиционный кабинет · Demo Broker</p>
+    </aside>
+    <section class="auth-card">
+        <h2>С возвращением</h2>
+        <p class="auth-description">Введите данные своего аккаунта.</p>
+        <form id="loginForm" class="auth-form">
+            <div class="form-group">
+                <label for="login">Логин</label>
+                <input type="text" id="login" name="login" placeholder="Ваш логин" autocomplete="username" minlength="3" maxlength="50" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input type="password" id="password" name="password" placeholder="Введите пароль" autocomplete="current-password" required>
+            </div>
+            <p id="formFeedback" class="form-feedback" role="alert" aria-live="polite"></p>
+            <button id="submitButton" type="submit">Войти в кабинет</button>
+            <p class="auth-switch">Пока нет аккаунта? <a href="/registration.html">Зарегистрироваться</a></p>
+        </form>
+    </section>
+</main>
 <script>
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const form = e.target;
-        const data = Object.fromEntries(new FormData(form).entries());
+    const loginForm = document.getElementById('loginForm');
+    const formFeedback = document.getElementById('formFeedback');
+    const submitButton = document.getElementById('submitButton');
+
+    loginForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        formFeedback.textContent = '';
+        const data = Object.fromEntries(new FormData(loginForm).entries());
+        data.login = data.login.trim();
+        submitButton.disabled = true;
+        submitButton.textContent = 'Входим…';
 
         try {
-            const resp = await fetch('/api/auth/login', {
+            const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
                 credentials: 'include'
             });
 
-            if (resp.ok) {
-                const json = await resp.json();
-                
-                // Сохраняем токен, если он пришёл
-                const token = json.token || json.accessToken || json.access_token || json.jwt;
-                if (token && typeof token === 'string' && token.includes('.')) {
-                    localStorage.setItem('jwt_token', token);
-                    // минимальный лог — можно удалить после отладки
-                    console.log("Токен сохранён (длина: " + token.length + ")");
-                } else {
-                    console.warn("Токен не найден в ответе сервера");
-                }
-
-                alert('Вход успешен!');
-                window.location.href = '/portfolio.html';
-            } else {
+            if (!response.ok) {
+                let message = 'Проверьте логин и пароль и попробуйте еще раз.';
                 try {
-                    const err = await resp.json();
-                    alert(
-                        `Ошибка ${err.status || resp.status} (${err.error || '—'})\n` +
-                        `Сообщение: ${err.message || 'Нет описания'}\n` +
-                        `Время: ${err.timestamp || '—'}`
-                    );
-                } catch {
-                    alert('Ошибка ' + resp.status + ': ' + (await resp.text() || 'Нет текста ответа'));
-                }
+                    const error = await response.json();
+                    message = error.message || error.error || message;
+                } catch (_) {}
+                throw new Error(message);
             }
-        } catch (err) {
-            alert('Сетевая ошибка: ' + err.message);
-            console.error(err);
+
+            const responseText = await response.text();
+            let result = {};
+            try { result = JSON.parse(responseText); } catch (_) {}
+            const token = result.token || result.accessToken || result.access_token || result.jwt;
+            if (token && typeof token === 'string' && token.includes('.')) localStorage.setItem('jwt_token', token);
+            window.location.href = '/portfolio.html';
+        } catch (error) {
+            formFeedback.textContent = error.message || 'Не удалось войти. Проверьте подключение и повторите попытку.';
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Войти в кабинет';
         }
     });
 </script>

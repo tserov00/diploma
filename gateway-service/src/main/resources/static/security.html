@@ -5,27 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Инструмент · Demo Broker</title>
     <script src="/vendor/lightweight-charts.standalone.production.js"></script>
-    <style>
-        :root { color-scheme: light; font-family: system-ui, Arial, sans-serif; background: #f3f5f8; color: #172033; }
-        * { box-sizing: border-box; } body { margin: 0; }
-        nav { display: flex; gap: 22px; padding: 16px max(20px, calc((100% - 1120px) / 2)); background: #fff; border-bottom: 1px solid #e1e5eb; }
-        nav a { color: #526176; text-decoration: none; } nav a.active { color: #175cd3; font-weight: 700; }
-        main { max-width: 1120px; margin: 28px auto; padding: 0 18px; }
-        .top { display: flex; justify-content: space-between; align-items: start; gap: 20px; }
-        h1 { margin: 0 0 6px; } .muted { color: #667085; } .card { background: #fff; border: 1px solid #e1e5eb; border-radius: 12px; padding: 18px; margin: 16px 0; }
-        .tag { display: inline-block; padding: 6px 10px; border-radius: 20px; background: #fff4d6; color: #8a5b00; font-size: 13px; }
-        .quote-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-        .metric label { display: block; color: #667085; font-size: 13px; margin-bottom: 5px; } .metric strong { font-size: 19px; }
-        .trade { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)) auto; align-items: end; gap: 12px; }
-        label { display: block; color: #526176; font-size: 13px; margin-bottom: 6px; }
-        input, select, button { font: inherit; padding: 10px 11px; border: 1px solid #cfd5df; border-radius: 7px; width: 100%; background: #fff; }
-        button { background: #175cd3; color: white; border: 0; font-weight: 600; cursor: pointer; } button:disabled { opacity: .6; cursor: wait; }
-        #chart { height: 390px; } #notice { min-height: 22px; margin-top: 10px; }
-        @media(max-width: 760px) { .quote-grid { grid-template-columns: repeat(2, 1fr); } .trade { grid-template-columns: repeat(2, 1fr); } #chart { height: 300px; } nav { gap: 12px; overflow: auto; white-space: nowrap; } }
-    </style>
+
+    <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-<nav><a href="/portfolio.html">Портфель</a><a href="/markets.html" class="active">Рынок</a><a href="/accounts.html">Счета</a><a href="/orders.html">Заявки</a><a href="/transactions.html">Исполнения</a></nav>
+<nav><a href="/portfolio.html" class="brand" aria-label="Demo Broker — портфель"><span class="brand-mark">D</span><span class="brand-name">Demo Broker</span></a><a href="/portfolio.html">Портфель</a><a href="/markets.html" class="active">Рынок</a><a href="/accounts.html">Счета</a><a href="/orders.html">Заявки</a><a href="/transactions.html">Исполнения</a></nav>
 <main>
     <div class="top"><div><a href="/markets.html" class="muted">← Все инструменты</a><h1 id="title">Загрузка…</h1><div id="exchange" class="muted"></div></div><span id="source" class="tag">Получение данных…</span></div>
     <section class="card quote-grid">
@@ -38,12 +22,13 @@
         <div class="metric"><label>Объём торгов</label><strong id="dayVolume">—</strong></div>
     </section>
     <section class="card"><h2>История цены</h2><div id="chart"></div><p id="chartNotice" class="muted"></p><p class="muted"><a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a> · Copyright (c) 2024 TradingView, Inc.</p></section>
-    <section class="card"><h2>Демо-заявка</h2><p class="muted">Исполнение моделируется только внутри приложения по доступной котировке; настоящие поручения в ALOR не отправляются. Количество указывается в акциях и должно быть кратно лоту.</p>
+    <section class="card"><h2>Демо-заявка</h2><p class="muted">Исполнение моделируется только внутри приложения по доступной котировке; настоящие поручения в ALOR не отправляются. Можно указать любое положительное целое количество акций, независимо от биржевого лота.</p>
         <form id="orderForm" class="trade">
             <div><label for="side">Сторона</label><select id="side"><option value="BUY">Покупка</option><option value="SELL">Продажа</option></select></div>
             <div><label for="type">Тип</label><select id="type"><option value="MARKET">Рыночная</option><option value="LIMIT">Лимитная</option></select></div>
-            <div id="limitField"><label for="limitPrice">Лимитная цена, ₽</label><input id="limitPrice" type="number" min="0.0001" step="0.0001"></div>
-            <div><label for="quantity">Количество акций · лот <span id="lotSize">—</span></label><input id="quantity" type="number" min="1" step="1" required></div>
+            <div id="limitField"><label for="limitPrice">Лимитная цена, ₽</label><input id="limitPrice" type="number" min="0.0001" step="0.0001" placeholder="Например, 125.50"></div>
+            <div id="marketPriceField" hidden><label id="marketPriceLabel" for="marketPrice">Ориентировочная цена, ₽</label><div class="readonly-price-wrap"><input id="marketPrice" class="locked-price" type="text" placeholder="Ожидание котировки" readonly aria-readonly="true"><svg class="price-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5zM12 14v3"></path></svg></div></div>
+            <div><label for="quantity">Количество акций</label><input id="quantity" type="number" min="1" step="1" placeholder="Например, 3" required></div>
             <button id="submit">Выставить</button>
         </form><div id="notice" class="muted" role="status"></div>
     </section>
@@ -56,10 +41,12 @@
     let security;
     let chart;
     let candleSeries;
+    let latestQuote;
     function authHeaders() { return { Authorization: 'Bearer ' + token, Accept: 'application/json' }; }
     async function getJson(url) { const response = await fetch(url, { headers: authHeaders() }); if (!response.ok) throw new Error('HTTP ' + response.status); return response.json(); }
     async function loadQuote() {
         const q = await getJson('/api/market/securities/' + encodeURIComponent(id) + '/quote');
+        latestQuote = q;
         document.getElementById('last').textContent = fmt(q.lastPrice);
         document.getElementById('lastTime').textContent = q.lastPriceAt ? 'Сделка: ' + dt(q.lastPriceAt) : '';
         document.getElementById('bid').textContent = fmt(q.bidPrice);
@@ -73,10 +60,9 @@
         document.getElementById('dayVolume').textContent = q.dayVolume == null ? '—' : Number(q.dayVolume).toLocaleString('ru-RU');
         document.getElementById('source').textContent = q.source === 'DEMO' ? 'DEMO · синтетические данные' : q.source === 'ALOR' ? 'ALOR · задержанные данные' : 'Нет доступной котировки';
         security.lotSize = q.lotSize || security.lotSize || 1;
-        document.getElementById('lotSize').textContent = security.lotSize;
-        document.getElementById('exchange').textContent = security.stockExchangeName + ' · ' + security.currencyCode + ' · размер лота: ' + security.lotSize;
-        document.getElementById('quantity').step = security.lotSize;
+        document.getElementById('exchange').textContent = security.stockExchangeName + ' · ' + security.currencyCode + ' · биржевой лот: ' + security.lotSize;
         if (q.askPrice && !document.getElementById('limitPrice').value) document.getElementById('limitPrice').value = Number(q.askPrice).toFixed(2);
+        updateMarketPrice();
     }
     function initChart() {
         if (!window.LightweightCharts) { document.getElementById('chartNotice').textContent = 'Графическая библиотека не загрузилась. Данные инструмента и заявки доступны.'; return; }
@@ -90,29 +76,70 @@
     async function loadHistory() {
         if (!candleSeries) return;
         try {
-            const to = Math.floor(Date.now() / 1000); const from = to - 90 * 86400;
+            const endDate = new Date();
+            const startDate = new Date(endDate);
+            const startDay = startDate.getDate();
+            startDate.setDate(1);
+            startDate.setFullYear(startDate.getFullYear() - 3);
+            const lastStartMonthDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+            startDate.setDate(Math.min(startDay, lastStartMonthDay));
+            const from = Math.floor(startDate.getTime() / 1000);
+            const to = Math.floor(endDate.getTime() / 1000);
             const items = await getJson('/api/market/securities/' + encodeURIComponent(id) + '/history?timeframe=1d&from=' + from + '&to=' + to);
             const candles = items.map(c => ({ time: Math.floor(new Date(c.time).getTime() / 1000), open: Number(c.open), high: Number(c.high), low: Number(c.low), close: Number(c.close) }));
             candles.sort((a, b) => a.time - b.time);
             candleSeries.setData(candles);
-            chart.timeScale().fitContent();
+            if (candles.length) {
+                const latestCandleTime = candles[candles.length - 1].time;
+                const threeMonthsInSeconds = 90 * 24 * 60 * 60;
+                chart.timeScale().setVisibleRange({
+                    from: Math.max(candles[0].time, latestCandleTime - threeMonthsInSeconds),
+                    to: latestCandleTime
+                });
+            }
             document.getElementById('chartNotice').textContent = items.length ? 'Дневные свечи из источника ' + (security.quoteSource || 'ALOR') + '.' : 'За выбранный период свечей нет.';
         } catch (error) { document.getElementById('chartNotice').textContent = 'Не удалось получить историю свечей. ' + error.message; }
     }
-    document.getElementById('type').addEventListener('change', event => { document.getElementById('limitField').hidden = event.target.value !== 'LIMIT'; });
+    const typeField = document.getElementById('type');
+    const limitField = document.getElementById('limitField');
+    const marketPriceField = document.getElementById('marketPriceField');
+    const sideField = document.getElementById('side');
+    const marketPriceInput = document.getElementById('marketPrice');
+    const marketPriceLabel = document.getElementById('marketPriceLabel');
+    function updateMarketPrice() {
+        const isBuy = sideField.value === 'BUY';
+        const price = latestQuote && (isBuy ? latestQuote.askPrice : latestQuote.bidPrice);
+        marketPriceInput.value = price == null ? '' : fmt(price);
+        marketPriceLabel.textContent = isBuy ? 'Лучший ask · покупка, ₽' : 'Лучший bid · продажа, ₽';
+    }
+    function syncLimitField() {
+        limitField.hidden = typeField.value !== 'LIMIT';
+        marketPriceField.hidden = typeField.value !== 'MARKET';
+        document.getElementById('limitPrice').required = typeField.value === 'LIMIT';
+    }
+    typeField.addEventListener('change', syncLimitField);
+    sideField.addEventListener('change', updateMarketPrice);
+    syncLimitField();
+    const quantityInput = document.getElementById('quantity');
+    quantityInput.addEventListener('input', () => quantityInput.setCustomValidity(''));
     document.getElementById('orderForm').addEventListener('submit', async event => {
         event.preventDefault();
         const button = document.getElementById('submit'); const notice = document.getElementById('notice');
         if (!token) { notice.textContent = 'Войдите в приложение, чтобы выставить заявку.'; return; }
-        const lot = Number(security.lotSize || 1); const quantity = Number(document.getElementById('quantity').value);
-        if (!Number.isInteger(quantity) || quantity <= 0 || quantity % lot !== 0) { notice.textContent = 'Количество должно быть кратно размеру лота: ' + lot + '.'; return; }
+        const quantity = Number(document.getElementById('quantity').value);
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+            quantityInput.setCustomValidity('Введите положительное целое количество акций.');
+            quantityInput.reportValidity();
+            notice.textContent = 'Проверьте количество акций.';
+            return;
+        }
         const type = document.getElementById('type').value;
         const body = { securityId: Number(id), side: document.getElementById('side').value, orderType: type, quantity: quantity,
             limitPrice: type === 'LIMIT' ? Number(document.getElementById('limitPrice').value) : null };
         button.disabled = true; notice.textContent = 'Отправляем демо-заявку…';
         try {
             const response = await fetch('/api/orders', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (!response.ok) { let msg = 'HTTP ' + response.status; try { const error = await response.json(); msg = error.message || msg; } catch (_) {} throw new Error(msg); }
+            if (!response.ok) { let msg = 'HTTP ' + response.status; try { const error = await response.json(); msg = error.detail || error.message || error.error || msg; } catch (_) {} throw new Error(msg); }
             notice.textContent = type === 'MARKET' ? 'Заявка принята; исполнение или отмена остатка появится в истории.' : 'Лимитная заявка принята и проверена по текущей котировке.';
         } catch (error) { notice.textContent = 'Заявка не создана: ' + error.message; }
         finally { button.disabled = false; }

@@ -13,6 +13,7 @@ import org.example.orderservice.enumeration.CurrencyCodeEnum;
 import org.example.orderservice.enumeration.OrderSideEnum;
 import org.example.orderservice.enumeration.OrderStatusEnum;
 import org.example.orderservice.enumeration.OrderTypeEnum;
+import org.example.orderservice.mapper.OrderMapper;
 import org.example.orderservice.repository.OrderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class OrderService {
     private final SavingsAccountClient savingsAccountClient;
     private final SecurityClient securityClient;
     private final OrderRepository orderRepository;
+    private final OrderMapper orderMapper;
     private final CustomerPortfolioService portfolioService;
     private final OrderExecutionService executionService;
     private final FillSettlementService settlementService;
@@ -40,6 +42,7 @@ public class OrderService {
     public OrderService(SavingsAccountClient savingsAccountClient,
                         SecurityClient securityClient,
                         OrderRepository orderRepository,
+                        OrderMapper orderMapper,
                         CustomerPortfolioService portfolioService,
                         OrderExecutionService executionService,
                         FillSettlementService settlementService,
@@ -47,6 +50,7 @@ public class OrderService {
         this.savingsAccountClient = savingsAccountClient;
         this.securityClient = securityClient;
         this.orderRepository = orderRepository;
+        this.orderMapper = orderMapper;
         this.portfolioService = portfolioService;
         this.executionService = executionService;
         this.settlementService = settlementService;
@@ -54,7 +58,6 @@ public class OrderService {
     }
 
     public void createOrder(OrderDto dto, Long userId) {
-        validateRequest(dto);
         SecurityDto security = securityClient.getById(dto.getSecurityId());
         if (security == null || security.getCurrencyCode() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Не удалось определить валюту инструмента");
@@ -67,12 +70,6 @@ public class OrderService {
 
         MarketQuoteDto quote = securityClient.getQuoteById(security.getId());
         if (dto.getOrderType() == OrderTypeEnum.MARKET) validateMarketQuote(quote, dto.getSide());
-        int lotSize = Math.max(1, quote != null && quote.getLotSize() != null
-                ? quote.getLotSize() : security.getLotSize() == null ? 1 : security.getLotSize());
-        if (dto.getQuantity() % lotSize != 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Количество должно быть кратно размеру лота: " + lotSize);
-        }
 
         BigDecimal reservePrice = dto.getOrderType() == OrderTypeEnum.LIMIT
                 ? dto.getLimitPrice()
@@ -146,36 +143,7 @@ public class OrderService {
         List<Long> securityIds = orders.stream().map(Order::getSecurityId).distinct().toList();
         Map<Long, SecurityDto> securities = securityClient.getByIds(securityIds).stream()
                 .collect(Collectors.toMap(SecurityDto::getId, Function.identity()));
-        return orders.stream().map(order -> {
-            SecurityDto security = securities.get(order.getSecurityId());
-            OrderResponseDto dto = new OrderResponseDto();
-            dto.setId(order.getId());
-            dto.setTicker(security == null ? "-" : security.getTicker());
-            dto.setSide(order.getSide().name());
-            dto.setOrderType(order.getOrderType().name());
-            dto.setLimitPrice(order.getLimitPrice());
-            dto.setMarketPrice(security == null ? null : security.getLastPrice());
-            dto.setQuantity(order.getQuantity());
-            dto.setRemainingQuantity(order.getRemainingQuantity());
-            dto.setFilledQuantity(order.getQuantity() - order.getRemainingQuantity());
-            dto.setStatus(order.getStatus().name());
-            dto.setCreatedAt(order.getCreatedAt());
-            return dto;
-        }).toList();
-    }
-
-    private void validateRequest(OrderDto dto) {
-        if (dto.getSide() == null || dto.getOrderType() == null || dto.getSecurityId() == null
-                || dto.getQuantity() == null || dto.getQuantity() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Некорректные параметры заявки");
-        }
-        if (dto.getOrderType() == OrderTypeEnum.LIMIT) {
-            if (dto.getLimitPrice() == null || dto.getLimitPrice().signum() <= 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Для лимитной заявки нужна положительная цена");
-            }
-        } else if (dto.getLimitPrice() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "У рыночной заявки не задаётся лимитная цена");
-        }
+        return orderMapper.toResponseDtos(orders, securities);
     }
 
     private void validateMarketQuote(MarketQuoteDto quote, OrderSideEnum side) {

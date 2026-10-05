@@ -4,151 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мои счета</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .navbar {
-            display: flex;
-            justify-content: space-around;
-            background: #fafafa;
-            border-bottom: 1px solid #ddd;
-        }
-        .navbar a {
-            padding: 12px 20px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-        }
-        .navbar a.active {
-            color: #007bff;
-            border-bottom: 3px solid #007bff;
-        }
-        .navbar a:hover {
-            background: #f0f0f0;
-        }
-        .content {
-            padding: 20px;
-        }
-        h1 {
-            margin: 0 0 20px;
-            font-size: 1.4em;
-        }
-        .actions {
-            margin-bottom: 15px;
-        }
-        .actions button {
-            padding: 8px 16px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-        }
-        .actions .deposit {
-            background: #28a745;
-        }
-        .actions .withdraw {
-            background: #dc3545;
-        }
-        .actions a.history {
-            margin-left: 20px;
-            color: #007bff;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .actions a.history:hover {
-            text-decoration: underline;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background: #f0f0f0;
-        }
-        .no-data, .auth-error {
-            text-align: center;
-            color: #777;
-            padding: 30px 0;
-            font-size: 1.1em;
-        }
-        .auth-error a {
-            color: #007bff;
-            text-decoration: underline;
-        }
-        /* Модальное окно */
-        .modal-backdrop {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            width: 320px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        .modal h2 {
-            margin-top: 0;
-        }
-        .form-group {
-            margin: 10px 0;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 6px;
-            box-sizing: border-box;
-        }
-        .modal .actions {
-            text-align: right;
-            margin-top: 15px;
-        }
-        .modal .actions button {
-            margin-left: 8px;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .modal .actions .confirm {
-            background: #007bff;
-            color: #fff;
-        }
-        .modal .actions .cancel {
-            background: #6c757d;
-            color: #fff;
-        }
-    </style>
+
+    <link rel="stylesheet" href="/app.css">
 </head>
 <body>
 <div class="container">
-    <nav class="navbar">
+    <nav class="navbar"><a href="/portfolio.html" class="brand" aria-label="Demo Broker — портфель"><span class="brand-mark">D</span><span class="brand-name">Demo Broker</span></a>
         <a href="/portfolio.html">Портфель</a>
         <a href="/markets.html">Рынки</a>
         <a href="/accounts.html" class="active">Мои счета</a>
@@ -178,28 +39,34 @@
 </div>
 
 <div id="modal" class="modal-backdrop">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <h2 id="modalTitle">Операция</h2>
         <div class="form-group">
             <label for="currencyInput">Код валюты</label>
-            <input type="text" id="currencyInput" placeholder="например, USD">
+            <select id="currencyInput" required>
+                <option value="" disabled selected>Выберите валюту</option>
+                <option value="USD">USD — доллар США</option>
+                <option value="EUR">EUR — евро</option>
+                <option value="GBP">GBP — фунт стерлингов</option>
+                <option value="JPY">JPY — японская иена</option>
+                <option value="CHF">CHF — швейцарский франк</option>
+                <option value="RUB">RUB — российский рубль</option>
+            </select>
         </div>
         <div class="form-group">
             <label for="amountInput">Сумма</label>
-            <input type="number" id="amountInput" min="0.01" step="0.01">
+            <input type="number" id="amountInput" min="0.01" step="0.01" placeholder="0,00" required>
         </div>
+        <p id="operationFeedback" class="form-feedback" role="status" aria-live="polite"></p>
         <div class="actions">
             <button class="cancel" onclick="closeModal()">Отмена</button>
-            <button class="confirm" onclick="submitOperation()">Подтвердить</button>
+            <button id="confirmOperation" class="confirm" type="button" onclick="submitOperation()">Подтвердить</button>
         </div>
     </div>
 </div>
 
 <script>
-// ────────────────────────────────────────────────
 const token = localStorage.getItem('jwt_token');
-
-console.log("[ACCOUNTS] Токен при загрузке страницы:", token ? "есть (длина " + token.length + ")" : "ОТСУТСТВУЕТ");
 
 if (!token) {
     document.querySelector('#accountsTable tbody').innerHTML = `
@@ -219,8 +86,6 @@ async function loadAccounts() {
     const tbody = document.querySelector('#accountsTable tbody');
     tbody.innerHTML = '<tr><td colspan="3" class="no-data">загрузка...</td></tr>';
 
-    console.log("[ACCOUNTS] Запрашиваем /api/accounts/list с токеном:", token.substring(0, 20) + "...");
-
     try {
         const response = await fetch('/api/accounts/list', {
             method: 'GET',
@@ -230,10 +95,7 @@ async function loadAccounts() {
             }
         });
 
-        console.log("[ACCOUNTS] Ответ сервера:", response.status, response.statusText);
-
         if (response.status === 401) {
-            console.warn("[ACCOUNTS] Сервер вернул 401 — токен не принят");
             tbody.innerHTML = `
                 <tr>
                     <td colspan="3" class="auth-error">
@@ -267,7 +129,6 @@ async function loadAccounts() {
             tbody.appendChild(tr);
         });
     } catch (err) {
-        console.error('[ACCOUNTS] Ошибка при загрузке счетов:', err);
         tbody.innerHTML = '<tr><td colspan="3" class="no-data">Ошибка загрузки счетов</td></tr>';
     }
 }
@@ -282,6 +143,7 @@ function openModal(op) {
         op === 'deposit' ? 'Пополнить баланс' : 'Снять баланс';
     document.getElementById('currencyInput').value = '';
     document.getElementById('amountInput').value = '';
+    document.getElementById('operationFeedback').textContent = '';
     document.getElementById('modal').style.display = 'flex';
 }
 
@@ -290,22 +152,26 @@ function closeModal() {
 }
 
 async function submitOperation() {
+    const currencyInput = document.getElementById('currencyInput');
+    const amountInput = document.getElementById('amountInput');
+    const feedback = document.getElementById('operationFeedback');
+    const confirmButton = document.getElementById('confirmOperation');
+
     if (!token) {
-        alert('Сессия истекла. Войдите заново.');
+        feedback.textContent = 'Сессия истекла. Войдите заново.';
         return;
     }
 
-    const currency = document.getElementById('currencyInput').value.trim().toUpperCase();
-    const amount = parseFloat(document.getElementById('amountInput').value);
+    if (!currencyInput.reportValidity() || !amountInput.reportValidity()) return;
 
-    if (!currency || isNaN(amount) || amount <= 0) {
-        alert('Укажите корректный код валюты и положительную сумму');
-        return;
-    }
+    const currency = currencyInput.value;
+    const amount = Number(amountInput.value);
+
+    feedback.textContent = '';
 
     const url = currentOp === 'deposit' ? '/api/accounts/deposit' : '/api/accounts/withdraw';
-
-    console.log(`[ACCOUNTS] Отправка ${currentOp} → ${url} с токеном`);
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Обрабатываем…';
 
     try {
         const response = await fetch(url, {
@@ -318,12 +184,8 @@ async function submitOperation() {
             body: JSON.stringify({ currencyCode: currency, amount })
         });
 
-        console.log("[ACCOUNTS] Ответ на операцию:", response.status);
-
         if (response.status === 401) {
-            console.warn("[ACCOUNTS] 401 при операции — токен отклонён сервером");
-            alert('Сессия истекла или токен недействителен (401). Войдите заново.');
-            // НЕ удаляем токен автоматически
+            feedback.textContent = 'Сессия истекла или токен недействителен. Войдите заново.';
             return;
         }
 
@@ -339,14 +201,14 @@ async function submitOperation() {
         } catch {
             errorData = { message: await response.text() || 'Нет описания' };
         }
-        alert(`Ошибка ${response.status}: ${errorData.message || errorData.error || '—'}`);
+        feedback.textContent = errorData.message || errorData.error || `Не удалось выполнить операцию (${response.status}).`;
     } catch (err) {
-        console.error('[ACCOUNTS] Сетевая ошибка при операции:', err);
-        alert('Сетевая ошибка: ' + err.message);
+        feedback.textContent = 'Сетевая ошибка. Проверьте подключение и повторите попытку.';
+    } finally {
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Подтвердить';
     }
 }
-
-// Запуск
 window.addEventListener('DOMContentLoaded', () => {
     if (token) {
         loadAccounts();
